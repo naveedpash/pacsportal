@@ -1,0 +1,13 @@
+[build]
+target = "index.html"
+release = false
+public_url = "/"
+filehash = true
+
+[[hooks]]
+stage = "pre_build"
+command = "tailwindcss"
+command_arguments = ["-i", "input.css", "-o", "tailwind.css"]
+
+[[proxy]]
+backend = "http://[::1]:8080/api/"
