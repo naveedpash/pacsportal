@@ -68,13 +68,12 @@ pub fn home() -> Html {
     //     },
     // ];
 
-    let studies: UseStateHandle<Vec<InMemDicomObject>> = use_state(|| vec![]);
+    let studies = use_state(|| vec![]);
 
     {
-        // let fetched_studies = use_state(|| vec![]);
+        let studies = studies.clone();
         use_effect_with_deps(
             move |_| {
-                let studies = studies.clone();
                 wasm_bindgen_futures::spawn_local(async move {
                     let fetched_studies: Vec<serde_json::Value> = Request::get("http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies?StudyDate=20230720")
                         .send()
@@ -87,7 +86,6 @@ pub fn home() -> Html {
                         .iter()
                         .map(|study| dicom_json::from_value(study.clone()).unwrap())
                         .collect();
-                    studies.set(fetched_studies);
                     fetched_studies.iter().for_each(|study| {
                         let patient_name = study
                             .element_by_name("PatientName")
@@ -97,15 +95,7 @@ pub fn home() -> Html {
                         let object = wasm_bindgen::JsValue::from(patient_name.into_owned());
                         gloo::console::log!(object);
                     });
-                    // let fetched_studies: DicomEntries =
-                    //     serde_json::from_str(&fetched_studies).unwrap();
-                    // let to_print = fetched_studies.entries[0]
-                    //     .element_by_name("PatientName")
-                    //     .unwrap()
-                    //     .to_str()
-                    //     .unwrap();
-                    // let object = wasm_bindgen::JsValue::from(to_print.into_owned());
-                    // gloo::console::log!(object);
+                    studies.set(fetched_studies);
                 });
             },
             (),
@@ -120,7 +110,8 @@ pub fn home() -> Html {
     let source_ae_filter = use_state(|| String::from(""));
     let entries_to_show = use_memo(
         |_| {
-            studies
+            (*studies)
+                .clone()
                 .into_iter()
                 .filter(|entry| {
                     entry
@@ -151,19 +142,18 @@ pub fn home() -> Html {
                     entry
                         .element_by_name("ModalitiesInStudy")
                         .unwrap()
-                        .to_str()
+                        .strings()
                         .unwrap()
-                        .to_lowercase()
-                        .contains(modality_filter.as_str())
+                        .contains(&modality_filter.as_str().to_uppercase())
                 })
-                .filter(|entry| entry.description.contains(description_filter.as_str()))
-                .filter(|entry| {
-                    entry
-                        .source_ae
-                        .to_lowercase()
-                        .contains(source_ae_filter.as_str())
-                })
-                .collect::<Vec<Data>>()
+                // .filter(|entry| entry.description.contains(description_filter.as_str()))
+                // .filter(|entry| {
+                //     entry
+                //         .source_ae
+                //         .to_lowercase()
+                //         .contains(source_ae_filter.as_str())
+                // })
+                .collect::<Vec<InMemDicomObject>>()
         },
         [
             (*id_filter).clone(),
@@ -244,16 +234,23 @@ pub fn home() -> Html {
         <tbody>
             {
                 entries_to_show.iter().map(move |entry| {
-                    let Data {id, name, accession, modality, description, source_ae, date, time} = entry;
+                    let id = entry.element_by_name("PatientID").unwrap().to_str().unwrap();
+                    let name = entry.element_by_name("PatientName").unwrap().to_str().unwrap();
+                    let accession = entry.element_by_name("AccessionNumber").unwrap().to_str().unwrap();
+                    let modalities = entry.element_by_name("ModalitiesInStudy").unwrap().strings().unwrap().join(", ");
+                    let description = "";
+                    let source_ae = "";
+                    let date = entry.element_by_name("StudyDate").unwrap().to_str().unwrap();
+                    let time = entry.element_by_name("StudyTime").unwrap().to_str().unwrap();
                     html!{
                         <tr class={classes!(String::from("hover:bg-[#d01c25]"))}>
-                            <td>{id.as_str()}</td>
-                            <td>{name.as_str()}</td>
-                            <td>{accession.as_str()}</td>
-                            <td>{modality.as_str()}</td>
-                            <td>{description.as_str()}</td>
-                            <td>{source_ae.as_str()}</td>
-                            <td>{date.as_str()} {time.as_str()}</td>
+                            <td>{id}</td>
+                            <td>{name}</td>
+                            <td>{accession}</td>
+                            <td>{modalities}</td>
+                            <td>{description}</td>
+                            <td>{source_ae}</td>
+                            <td>{date} {time}</td>
                         </tr>
                     }
                 }).collect::<Html>()
