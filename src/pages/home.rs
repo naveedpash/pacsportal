@@ -69,9 +69,11 @@ pub fn home() -> Html {
     // ];
 
     let studies = use_state(|| vec![]);
+    let is_loaded = use_state(|| false);
 
     {
         let studies = studies.clone();
+        let is_loaded = is_loaded.clone();
         use_effect_with_deps(
             move |_| {
                 wasm_bindgen_futures::spawn_local(async move {
@@ -96,6 +98,7 @@ pub fn home() -> Html {
                         gloo::console::log!(object);
                     });
                     studies.set(fetched_studies);
+                    is_loaded.set(true);
                 });
             },
             (),
@@ -230,32 +233,67 @@ pub fn home() -> Html {
             </tr>
         </tfoot>
     };
-    let body = html_nested! {
-        <tbody>
-            {
-                entries_to_show.iter().map(move |entry| {
-                    let id = entry.element_by_name("PatientID").unwrap().to_str().unwrap();
-                    let name = entry.element_by_name("PatientName").unwrap().to_str().unwrap();
-                    let accession = entry.element_by_name("AccessionNumber").unwrap().to_str().unwrap();
-                    let modalities = entry.element_by_name("ModalitiesInStudy").unwrap().strings().unwrap().join(", ");
-                    let description = "";
-                    let source_ae = "";
-                    let date = entry.element_by_name("StudyDate").unwrap().to_str().unwrap();
-                    let time = entry.element_by_name("StudyTime").unwrap().to_str().unwrap();
-                    html!{
-                        <tr class={classes!(String::from("hover:bg-[#d01c25]"))}>
-                            <td>{id}</td>
-                            <td>{name}</td>
-                            <td>{accession}</td>
-                            <td>{modalities}</td>
-                            <td>{description}</td>
-                            <td>{source_ae}</td>
-                            <td>{date} {time}</td>
-                        </tr>
+    // let body = html_nested! {
+    //     <tbody>
+    //         {
+    //             entries_to_show.iter().map(move |entry| {
+    //                 let id = entry.element_by_name("PatientID").unwrap().to_str().unwrap();
+    //                 let name = entry.element_by_name("PatientName").unwrap().to_str().unwrap();
+    //                 let accession = entry.element_by_name("AccessionNumber").unwrap().to_str().unwrap();
+    //                 let modalities = entry.element_by_name("ModalitiesInStudy").unwrap().strings().unwrap().join(", ");
+    //                 let description = "";
+    //                 let source_ae = "";
+    //                 let date = entry.element_by_name("StudyDate").unwrap().to_str().unwrap();
+    //                 let time = entry.element_by_name("StudyTime").unwrap().to_str().unwrap();
+    //                 html!{
+    //                     <tr class={classes!(String::from("hover:bg-[#d01c25]"))}>
+    //                         <td>{id}</td>
+    //                         <td>{name}</td>
+    //                         <td>{accession}</td>
+    //                         <td>{modalities}</td>
+    //                         <td>{description}</td>
+    //                         <td>{source_ae}</td>
+    //                         <td>{date} {time}</td>
+    //                     </tr>
+    //                 }
+    //             }).collect::<Html>()
+    //         }
+    //     </tbody>
+    // };
+    let body = move || -> Html {
+        if *is_loaded {
+            html! {
+                <tbody>
+                    {
+                        entries_to_show.iter().map(move |entry| {
+                            let id = entry.element_by_name("PatientID").unwrap().to_str().unwrap();
+                            let name = entry.element_by_name("PatientName").unwrap().to_str().unwrap();
+                            let accession = entry.element_by_name("AccessionNumber").unwrap().to_str().unwrap();
+                            let modalities = entry.element_by_name("ModalitiesInStudy").unwrap().strings().unwrap().join(", ");
+                            let description = "";
+                            let source_ae = "";
+                            let date = entry.element_by_name("StudyDate").unwrap().to_str().unwrap();
+                            let time = entry.element_by_name("StudyTime").unwrap().to_str().unwrap();
+                            html!{
+                                <tr class={classes!(String::from("hover:bg-[#d01c25]"))}>
+                                    <td>{id}</td>
+                                    <td>{name}</td>
+                                    <td>{accession}</td>
+                                    <td>{modalities}</td>
+                                    <td>{description}</td>
+                                    <td>{source_ae}</td>
+                                    <td>{date} {time}</td>
+                                </tr>
+                            }
+                        }).collect::<Html>()
                     }
-                }).collect::<Html>()
+                </tbody>
             }
-        </tbody>
+        } else {
+            html! {
+                <div>{"Loading..."}</div>
+            }
+        }
     };
     /* Colors
     NATURAL GRAY #8A8887
@@ -303,7 +341,7 @@ pub fn home() -> Html {
         <div class={classes!(String::from("container mx-auto p-4 overflow-auto relative"))}>
                 <table class={classes!(String::from("table-fixed w-full text-left"))}>
                     {header}
-                    {body}
+                    {body()}
                     {footer}
                 </table>
         </div>

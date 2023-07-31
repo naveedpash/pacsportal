@@ -218,7 +218,7 @@ dependencies = [
 
 [[package]]
 name = "dicom-core"
-version = "0.5.4"
+version = "0.6.0"
 dependencies = [
  "chrono",
  "itertools",
@@ -230,7 +230,7 @@ dependencies = [
 
 [[package]]
 name = "dicom-dictionary-std"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "dicom-core",
  "once_cell",
@@ -238,7 +238,7 @@ dependencies = [
 
 [[package]]
 name = "dicom-encoding"
-version = "0.5.3"
+version = "0.6.0"
 dependencies = [
  "byteordered",
  "dicom-core",
@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "dicom-object"
-version = "0.5.4"
+version = "0.6.0"
 dependencies = [
  "byteordered",
  "dicom-core",
@@ -279,7 +279,7 @@ dependencies = [
 
 [[package]]
 name = "dicom-parser"
-version = "0.5.3"
+version = "0.6.0"
 dependencies = [
  "chrono",
  "dicom-core",
@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "dicom-transfer-syntax-registry"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "byteordered",
  "dicom-core",
@@ -818,9 +818,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.10.5"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
 dependencies = [
  "either",
 ]
