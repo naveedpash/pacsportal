@@ -1,73 +1,10 @@
 use dicom_object::InMemDicomObject;
 use gloo::net::http::Request;
-use serde::Deserialize;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct Data {
-    #[serde(rename = "00100020")]
-    pub id: String,
-    #[serde(rename = "00100010")]
-    pub name: String,
-    #[serde(rename = "00800050")]
-    pub accession: String,
-    #[serde(rename = "00800061")]
-    pub modality: String,
-    pub description: String,
-    #[serde(rename = "00800054")]
-    pub source_ae: String,
-    #[serde(rename = "00800020")]
-    pub date: String,
-    #[serde(rename = "00800030")]
-    pub time: String,
-}
-
 #[function_component(Home)]
 pub fn home() -> Html {
-    // let entries = vec![
-    //     Data {
-    //         id: "01".into(),
-    //         name: "Naveed Pasha".into(),
-    //         accession: "0000001".into(),
-    //         modality: "CT".into(),
-    //         description: "".into(),
-    //         source_ae: "KP-Server".into(),
-    //         date: "12-12-2023".into(),
-    //         time: "12:00".into(),
-    //     },
-    //     Data {
-    //         id: "02".into(),
-    //         name: "Ayaz Dahri".into(),
-    //         accession: "0000002".into(),
-    //         modality: "CT".into(),
-    //         description: "".into(),
-    //         source_ae: "FCR-CSL".into(),
-    //         date: "13-12-2023".into(),
-    //         time: "12:00".into(),
-    //     },
-    //     Data {
-    //         id: "03".into(),
-    //         name: "Tariq Hussain".into(),
-    //         accession: "0000003".into(),
-    //         modality: "CR".into(),
-    //         description: "".into(),
-    //         source_ae: "KP-Server".into(),
-    //         date: "14-12-2023".into(),
-    //         time: "12:00".into(),
-    //     },
-    //     Data {
-    //         id: "04".into(),
-    //         name: "Shaista Er".into(),
-    //         accession: "0000004".into(),
-    //         modality: "US".into(),
-    //         description: "".into(),
-    //         source_ae: "FCR-CSL".into(),
-    //         date: "15-12-2023".into(),
-    //         time: "12:00".into(),
-    //     },
-    // ];
-
     let studies = use_state(|| vec![]);
     let is_loaded = use_state(|| false);
 
@@ -89,12 +26,12 @@ pub fn home() -> Html {
                         .map(|study| dicom_json::from_value(study.clone()).unwrap())
                         .collect();
                     fetched_studies.iter().for_each(|study| {
-                        let patient_name = study
-                            .element_by_name("PatientName")
+                        let patient_id = study
+                            .element_by_name("PatientID")
                             .unwrap()
                             .to_str()
                             .unwrap();
-                        let object = wasm_bindgen::JsValue::from(patient_name.into_owned());
+                        let object = wasm_bindgen::JsValue::from(patient_id.into_owned());
                         gloo::console::log!(object);
                     });
                     studies.set(fetched_studies);
@@ -233,65 +170,41 @@ pub fn home() -> Html {
             </tr>
         </tfoot>
     };
-    // let body = html_nested! {
-    //     <tbody>
-    //         {
-    //             entries_to_show.iter().map(move |entry| {
-    //                 let id = entry.element_by_name("PatientID").unwrap().to_str().unwrap();
-    //                 let name = entry.element_by_name("PatientName").unwrap().to_str().unwrap();
-    //                 let accession = entry.element_by_name("AccessionNumber").unwrap().to_str().unwrap();
-    //                 let modalities = entry.element_by_name("ModalitiesInStudy").unwrap().strings().unwrap().join(", ");
-    //                 let description = "";
-    //                 let source_ae = "";
-    //                 let date = entry.element_by_name("StudyDate").unwrap().to_str().unwrap();
-    //                 let time = entry.element_by_name("StudyTime").unwrap().to_str().unwrap();
-    //                 html!{
-    //                     <tr class={classes!(String::from("hover:bg-[#d01c25]"))}>
-    //                         <td>{id}</td>
-    //                         <td>{name}</td>
-    //                         <td>{accession}</td>
-    //                         <td>{modalities}</td>
-    //                         <td>{description}</td>
-    //                         <td>{source_ae}</td>
-    //                         <td>{date} {time}</td>
-    //                     </tr>
-    //                 }
-    //             }).collect::<Html>()
-    //         }
-    //     </tbody>
-    // };
-    let body = move || -> Html {
-        if *is_loaded {
-            html! {
-                <tbody>
-                    {
-                        entries_to_show.iter().map(move |entry| {
-                            let id = entry.element_by_name("PatientID").unwrap().to_str().unwrap();
-                            let name = entry.element_by_name("PatientName").unwrap().to_str().unwrap();
-                            let accession = entry.element_by_name("AccessionNumber").unwrap().to_str().unwrap();
-                            let modalities = entry.element_by_name("ModalitiesInStudy").unwrap().strings().unwrap().join(", ");
-                            let description = "";
-                            let source_ae = "";
-                            let date = entry.element_by_name("StudyDate").unwrap().to_str().unwrap();
-                            let time = entry.element_by_name("StudyTime").unwrap().to_str().unwrap();
-                            html!{
-                                <tr class={classes!(String::from("hover:bg-[#d01c25]"))}>
-                                    <td>{id}</td>
-                                    <td>{name}</td>
-                                    <td>{accession}</td>
-                                    <td>{modalities}</td>
-                                    <td>{description}</td>
-                                    <td>{source_ae}</td>
-                                    <td>{date} {time}</td>
-                                </tr>
-                            }
-                        }).collect::<Html>()
-                    }
-                </tbody>
-            }
-        } else {
-            html! {
-                <div>{"Loading..."}</div>
+    let body = {
+        let studies = (*studies).clone();
+        move || -> Html {
+            if *is_loaded {
+                html! {
+                    <tbody>
+                        {
+                            studies.iter().map(move |entry| {
+                                let id = entry.element_by_name("PatientID").unwrap().to_str().unwrap();
+                                let name = entry.element_by_name("PatientName").unwrap().to_str().unwrap();
+                                let accession = entry.element_by_name("AccessionNumber").unwrap().to_str().unwrap();
+                                let modalities = entry.element_by_name("ModalitiesInStudy").unwrap().strings().unwrap().join(", ");
+                                let description = "";
+                                let source_ae = "";
+                                let date = entry.element_by_name("StudyDate").unwrap().to_str().unwrap();
+                                let time = entry.element_by_name("StudyTime").unwrap().to_str().unwrap();
+                                html!{
+                                    <tr key={id.clone().into_owned()} class={classes!(String::from("hover:bg-[#d01c25]"))}>
+                                        <td>{id}</td>
+                                        <td>{name}</td>
+                                        <td>{accession}</td>
+                                        <td>{modalities}</td>
+                                        <td>{description}</td>
+                                        <td>{source_ae}</td>
+                                        <td>{date} {time}</td>
+                                    </tr>
+                                }
+                            }).collect::<Html>()
+                        }
+                    </tbody>
+                }
+            } else {
+                html! {
+                    <div>{"Loading..."}</div>
+                }
             }
         }
     };
