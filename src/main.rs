@@ -1,5 +1,6 @@
 mod pages;
 use pages::home::Home;
+use pages::reporting::Reporting;
 
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -10,6 +11,8 @@ pub enum Route {
     Home,
     // #[at("/login")]
     // Login,
+    #[at("/reporting")]
+    Reporting,
     #[at("/404")]
     NotFound,
 }
@@ -18,6 +21,7 @@ fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <Home /> },
         // Route::Login => html! { <Login /> }
+        Route::Reporting => html! { <Reporting /> },
         Route::NotFound => html! { <h1>{"404: Not Found"}</h1> },
     }
 }

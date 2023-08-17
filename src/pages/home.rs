@@ -1,3 +1,4 @@
+use dicom_dictionary_std::tags;
 use dicom_object::InMemDicomObject;
 use gloo::net::http::Request;
 use web_sys::HtmlInputElement;
@@ -11,6 +12,20 @@ pub fn home() -> Html {
     {
         let studies = studies.clone();
         let is_loaded = is_loaded.clone();
+        // use_effect(move || {
+        //     wasm_bindgen_futures::spawn_local(async move {
+        //         let mwl_response: serde_json::Value =
+        //             Request::post("http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/mwlitems")
+        //                 .body("{}")
+        //                 .unwrap()
+        //                 .send()
+        //                 .await
+        //                 .unwrap()
+        //                 .json()
+        //                 .await
+        //                 .unwrap();
+        //     });
+        // });
         use_effect_with_deps(
             move |_| {
                 wasm_bindgen_futures::spawn_local(async move {
@@ -26,11 +41,8 @@ pub fn home() -> Html {
                         .map(|study| dicom_json::from_value(study.clone()).unwrap())
                         .collect();
                     fetched_studies.iter().for_each(|study| {
-                        let patient_id = study
-                            .element_by_name("PatientID")
-                            .unwrap()
-                            .to_str()
-                            .unwrap();
+                        let patient_id =
+                            study.element(tags::PATIENT_NAME).unwrap().to_str().unwrap();
                         let object = wasm_bindgen::JsValue::from(patient_id.into_owned());
                         gloo::console::log!(object);
                     });
