@@ -1,5 +1,5 @@
-use dicom_dictionary_std::tags;
-use dicom_object::InMemDicomObject;
+use dicom::dictionary_std::tags;
+use dicom::object::InMemDicomObject;
 use gloo::net::http::Request;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;

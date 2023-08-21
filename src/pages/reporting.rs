@@ -1,5 +1,9 @@
-use data_encoding::BASE64;
-use pdf_writer::{Content, Finish, Name, PdfWriter, Rect, Ref, Str};
+use dicom::{
+    core::{DataElement, VR},
+    dictionary_std::{tags, uids},
+    object::InMemDicomObject,
+};
+use gloo::net::http::Request;
 use web_sys::HtmlTextAreaElement;
 use yew::prelude::*;
 
@@ -14,43 +18,20 @@ pub fn reporting() -> Html {
             let report = report.clone();
             let pdf_report = pdf_report.clone();
             move |_| {
-                let mut writer = PdfWriter::new();
-                let catalog_id = Ref::new(1);
-                let page_tree_id = Ref::new(2);
-                let page_id = Ref::new(3);
-                let font_id = Ref::new(4);
-                let content_id = Ref::new(5);
-                let font_name = Name(b"F1");
-
-                writer.catalog(catalog_id).pages(page_tree_id);
-                writer.pages(page_tree_id).kids([page_id]).count(1);
-
-                let mut page = writer.page(page_id);
-                page.media_box(Rect {
-                    x1: 0.0,
-                    y1: 0.0,
-                    x2: 595.0,
-                    y2: 842.0,
-                });
-                page.parent(page_tree_id);
-                page.contents(content_id);
-                page.resources().fonts().pair(font_name, font_id);
-                page.finish();
-
-                writer.type1_font(font_id).base_font(Name(b"Helvetica"));
-                let mut content = Content::new();
-                content.begin_text();
-                content.set_font(font_name, 14.0);
-                content.next_line(108.0, 734.0);
-                content.show(Str((*report).as_bytes()));
-                content.end_text();
-                writer.stream(content_id, &content.finish());
-
-                let buf: Vec<u8> = writer.finish();
-                let encoded_buf = BASE64.encode(&buf);
-                let mut current_report = String::from("data:application/pdf;base64,");
-                current_report.push_str(&encoded_buf);
-                pdf_report.set(current_report);
+                let mut sr = InMemDicomObject::from_element_iter([
+                    DataElement::new(tags::SOP_CLASS_UID, VR::UI, uids::BASIC_TEXT_SR_STORAGE),
+                    // TODO: ? need is SOP INSTANCE UID for this SR mandatory? Or will DCM4CHEE generate it?
+                    // DataElement::new(tags::SOP_INSTANCE_UID, VR::UI, "12345"),
+                    DataElement::new(tags::PATIENT_NAME, VR::PN, "MRS.^NASREEN^SHAH"),
+                    DataElement::new(tags::PATIENT_ID, VR::LO, "2021/022045"),
+                    DataElement::new(
+                        tags::STUDY_INSTANCE_UID,
+                        VR::UI,
+                        "1.2.392.200036.9116.6.18.10562196.1467.20230724090543953.1.74",
+                    ),
+                    DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
+                    DataElement::new(tags::TEXT_VALUE, VR::UT, "THIS IS A TEST REPORT."),
+                ]);
             }
         },
         (*report).clone(),
