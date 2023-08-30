@@ -6,36 +6,36 @@ use yew::prelude::*;
 
 #[function_component(Home)]
 pub fn home() -> Html {
-    let studies = use_state(|| vec![]);
+    let studies = use_state(|| Vec::<InMemDicomObject>::new());
     let is_loaded = use_state(|| false);
+    let id_filter = use_state(|| String::from(""));
+    let name_filter = use_state(|| String::from(""));
+    let accession_filter = use_state(|| String::from(""));
+    let modality_filter = use_state(|| String::from(""));
+    let description_filter = use_state(|| String::from(""));
+    let source_ae_filter = use_state(|| String::from(""));
+    let start_date_filter = use_state(|| String::from(""));
+    let end_date_filter = use_state(|| String::from(""));
 
     {
         let studies = studies.clone();
         let is_loaded = is_loaded.clone();
-        // use_effect(move || {
-        //     wasm_bindgen_futures::spawn_local(async move {
-        //         let mwl_response: serde_json::Value =
-        //             Request::post("http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/mwlitems")
-        //                 .body("{}")
-        //                 .unwrap()
-        //                 .send()
-        //                 .await
-        //                 .unwrap()
-        //                 .json()
-        //                 .await
-        //                 .unwrap();
-        //     });
-        // });
         use_effect_with_deps(
             move |_| {
                 wasm_bindgen_futures::spawn_local(async move {
-                    let fetched_studies: Vec<serde_json::Value> = Request::get("http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies?StudyDate=20230720")
-                        .send()
-                        .await
-                        .unwrap()
-                        .json()
-                        .await
-                        .unwrap();
+                    let qido_root = "http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies";
+                    let qido_query = "?StudyDate=20230720";
+                    let qido_query_include_field = "&includefield=StudyDescription";
+                    let fetched_studies: Vec<serde_json::Value> = Request::get(&format!(
+                        "{}{}{}",
+                        qido_root, qido_query, qido_query_include_field
+                    ))
+                    .send()
+                    .await
+                    .unwrap()
+                    .json()
+                    .await
+                    .unwrap();
                     let fetched_studies: Vec<InMemDicomObject> = fetched_studies
                         .iter()
                         .map(|study| dicom_json::from_value(study.clone()).unwrap())
@@ -54,12 +54,6 @@ pub fn home() -> Html {
         );
     }
 
-    let id_filter = use_state(|| String::from(""));
-    let name_filter = use_state(|| String::from(""));
-    let accession_filter = use_state(|| String::from(""));
-    let modality_filter = use_state(|| String::from(""));
-    let description_filter = use_state(|| String::from(""));
-    let source_ae_filter = use_state(|| String::from(""));
     let entries_to_show = use_memo(
         |_| {
             (*studies)
@@ -190,14 +184,18 @@ pub fn home() -> Html {
                     <tbody>
                         {
                             studies.iter().map(move |entry| {
-                                let id = entry.element_by_name("PatientID").unwrap().to_str().unwrap();
-                                let name = entry.element_by_name("PatientName").unwrap().to_str().unwrap();
-                                let accession = entry.element_by_name("AccessionNumber").unwrap().to_str().unwrap();
-                                let modalities = entry.element_by_name("ModalitiesInStudy").unwrap().strings().unwrap().join(", ");
-                                let description = "";
-                                let source_ae = "";
-                                let date = entry.element_by_name("StudyDate").unwrap().to_str().unwrap();
-                                let time = entry.element_by_name("StudyTime").unwrap().to_str().unwrap();
+                                let id = entry.get(tags::PATIENT_ID).unwrap().to_str().unwrap();
+                                let name = entry.get(tags::PATIENT_NAME).unwrap().to_str().unwrap().replace("^", " ").trim().to_owned();
+                                let accession = entry.get(tags::ACCESSION_NUMBER).unwrap().to_str().unwrap();
+                                let modalities = entry.get(tags::MODALITIES_IN_STUDY).unwrap().strings().unwrap().join(", ");
+                                let description = if let Some(description) = entry.get(tags::STUDY_DESCRIPTION) {
+                                    description.to_str().unwrap()
+                                } else {"".into()};
+                                let source_ae = if let Some(source_ae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
+                                    source_ae.to_str().unwrap()
+                                } else {"".into()};
+                                let date = entry.get(tags::STUDY_DATE).unwrap().to_str().unwrap();
+                                let time = entry.get(tags::STUDY_TIME).unwrap().to_str().unwrap();
                                 html!{
                                     <tr key={id.clone().into_owned()} class={classes!(String::from("hover:bg-[#d01c25]"))}>
                                         <td>{id}</td>
@@ -206,7 +204,7 @@ pub fn home() -> Html {
                                         <td>{modalities}</td>
                                         <td>{description}</td>
                                         <td>{source_ae}</td>
-                                        <td>{date} {time}</td>
+                                        <td>{date}{" "}{time}</td>
                                     </tr>
                                 }
                             }).collect::<Html>()

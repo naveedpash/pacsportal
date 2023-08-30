@@ -3,7 +3,7 @@ use dicom::{
     dictionary_std::{tags, uids},
     object::InMemDicomObject,
 };
-use gloo::net::http::Request;
+use gloo::{console::log, net::http::Request};
 use web_sys::HtmlTextAreaElement;
 use yew::prelude::*;
 
@@ -18,10 +18,9 @@ pub fn reporting() -> Html {
             let report = report.clone();
             let pdf_report = pdf_report.clone();
             move |_| {
-                let mut sr = InMemDicomObject::from_element_iter([
+                let sr = InMemDicomObject::from_element_iter([
                     DataElement::new(tags::SOP_CLASS_UID, VR::UI, uids::BASIC_TEXT_SR_STORAGE),
-                    // TODO: ? need is SOP INSTANCE UID for this SR mandatory? Or will DCM4CHEE generate it?
-                    // DataElement::new(tags::SOP_INSTANCE_UID, VR::UI, "12345"),
+                    DataElement::new(tags::SOP_INSTANCE_UID, VR::UI, "12345"),
                     DataElement::new(tags::PATIENT_NAME, VR::PN, "MRS.^NASREEN^SHAH"),
                     DataElement::new(tags::PATIENT_ID, VR::LO, "2021/022045"),
                     DataElement::new(
@@ -29,9 +28,36 @@ pub fn reporting() -> Html {
                         VR::UI,
                         "1.2.392.200036.9116.6.18.10562196.1467.20230724090543953.1.74",
                     ),
+                    DataElement::new(tags::MODALITY, VR::CS, "SR"),
+                    DataElement::new(tags::SERIES_INSTANCE_UID, VR::UI, "123456"),
+                    DataElement::new(tags::SERIES_NUMBER, VR::IS, "1"),
                     DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
                     DataElement::new(tags::TEXT_VALUE, VR::UT, "THIS IS A TEST REPORT."),
                 ]);
+
+                let mut request_body = String::from("\r\n--myboundary");
+                request_body.push_str("\r\nContent-Type: application/dicom+json\r\n\r\n");
+                request_body.push_str("[");
+                request_body.push_str(&dicom_json::to_string(sr).unwrap());
+                request_body.push_str("]");
+                request_body.push_str("\r\n--myboundary--");
+
+                wasm_bindgen_futures::spawn_local(async move {
+                    let result = Request::post(
+                        "http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies",
+                    )
+                    .header(
+                        "Content-Type",
+                        "multipart/related; type=\"application/dicom+json\"; boundary=myboundary",
+                    )
+                    .body(request_body)
+                    .unwrap()
+                    .send()
+                    .await
+                    .unwrap();
+
+                    log!(result.ok());
+                });
             }
         },
         (*report).clone(),
