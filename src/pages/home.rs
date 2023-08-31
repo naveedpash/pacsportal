@@ -25,7 +25,8 @@ pub fn home() -> Html {
                 wasm_bindgen_futures::spawn_local(async move {
                     let qido_root = "http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies";
                     let qido_query = "?StudyDate=20230720";
-                    let qido_query_include_field = "&includefield=StudyDescription";
+                    let qido_query_include_field =
+                        "&includefield=StudyDescription&includefield=SourceApplicationEntityTitle";
                     let fetched_studies: Vec<serde_json::Value> = Request::get(&format!(
                         "{}{}{}",
                         qido_root, qido_query, qido_query_include_field
@@ -92,13 +93,26 @@ pub fn home() -> Html {
                         .unwrap()
                         .contains(&modality_filter.as_str().to_uppercase())
                 })
-                // .filter(|entry| entry.description.contains(description_filter.as_str()))
-                // .filter(|entry| {
-                //     entry
-                //         .source_ae
-                //         .to_lowercase()
-                //         .contains(source_ae_filter.as_str())
-                // })
+                .filter(|entry| {
+                    if let Some(description) = entry.get(tags::STUDY_DESCRIPTION) {
+                        description
+                            .string()
+                            .unwrap()
+                            .contains(&description_filter.as_str().to_uppercase())
+                    } else {
+                        false
+                    }
+                })
+                .filter(|entry| {
+                    if let Some(source_ae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
+                        source_ae
+                            .string()
+                            .unwrap()
+                            .contains(&source_ae_filter.as_str().to_uppercase())
+                    } else {
+                        false
+                    }
+                })
                 .collect::<Vec<InMemDicomObject>>()
         },
         [
@@ -194,8 +208,8 @@ pub fn home() -> Html {
                                 let source_ae = if let Some(source_ae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
                                     source_ae.to_str().unwrap()
                                 } else {"".into()};
-                                let date = entry.get(tags::STUDY_DATE).unwrap().to_str().unwrap();
-                                let time = entry.get(tags::STUDY_TIME).unwrap().to_str().unwrap();
+                                let date = entry.get(tags::STUDY_DATE).unwrap().to_date().unwrap().to_naive_date().unwrap().format("%Y-%m-%d").to_string();
+                                let time = entry.get(tags::STUDY_TIME).unwrap().to_time().unwrap().to_naive_time().unwrap().format("%H:%M:%S").to_string();
                                 html!{
                                     <tr key={id.clone().into_owned()} class={classes!(String::from("hover:bg-[#d01c25]"))}>
                                         <td>{id}</td>
