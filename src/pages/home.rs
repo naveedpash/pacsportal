@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+
+use chrono::{prelude::*, Days, Months};
 use dicom::dictionary_std::tags;
 use dicom::object::InMemDicomObject;
 use gloo::net::http::Request;
-use web_sys::HtmlInputElement;
+use wasm_bindgen::JsCast;
+use web_sys::{HtmlButtonElement, HtmlInputElement};
 use yew::prelude::*;
 
 #[function_component(Home)]
@@ -14,22 +18,45 @@ pub fn home() -> Html {
     let modality_filter = use_state(|| String::from(""));
     let description_filter = use_state(|| String::from(""));
     let source_ae_filter = use_state(|| String::from(""));
-    let start_date_filter = use_state(|| String::from(""));
-    let end_date_filter = use_state(|| String::from(""));
+    let start_date_filter = use_state(|| Local::now().date_naive());
+    let end_date_filter = use_state(|| Local::now().date_naive());
+    // let modalities_filter = use_state(|| Vec::<&str>::new());
+    let modality_filters = use_state(|| {
+        HashMap::from([
+            ("CR", false),
+            ("DR", false),
+            ("CT", false),
+            ("PT", false),
+            ("MR", false),
+            ("US", false),
+            ("XA", false),
+            ("NM", false),
+            ("OT", false),
+        ])
+    });
 
-    {
-        let studies = studies.clone();
-        let is_loaded = is_loaded.clone();
-        use_effect_with_deps(
+    use_effect_with_deps(
+        {
+            let studies = studies.clone();
+            let is_loaded = is_loaded.clone();
+            let start_date_filter = start_date_filter.clone();
+            let end_date_filter = end_date_filter.clone();
+            let modalities_filter = modality_filters.clone();
             move |_| {
+                let start_date = start_date_filter.format("%Y%m%d");
+                let end_date = end_date_filter.format("%Y%m%d");
+                let mut modalities = String::from("");
+                modalities_filter
+                    .iter()
+                    .for_each(|(modality, is_selected)| {
+                        if *is_selected {
+                            modalities = format!("{}&ModalitiesInStudy={}", modalities, modality);
+                        }
+                    });
                 wasm_bindgen_futures::spawn_local(async move {
-                    let qido_root = "http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies";
-                    let qido_query = "?StudyDate=20230720";
-                    let qido_query_include_field =
-                        "&includefield=StudyDescription&includefield=SourceApplicationEntityTitle";
                     let fetched_studies: Vec<serde_json::Value> = Request::get(&format!(
-                        "{}{}{}",
-                        qido_root, qido_query, qido_query_include_field
+                        "http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies?StudyDate={}-{}{}&includefield=StudyDescription&includefield=SourceApplicationEntityTitle",
+                        start_date, end_date, modalities,
                     ))
                     .send()
                     .await
@@ -50,10 +77,10 @@ pub fn home() -> Html {
                     studies.set(fetched_studies);
                     is_loaded.set(true);
                 });
-            },
-            (),
-        );
-    }
+            }
+        },
+        [start_date_filter.clone(), end_date_filter.clone()],
+    );
 
     let entries_to_show = use_memo(
         |_| {
@@ -116,15 +143,16 @@ pub fn home() -> Html {
                 .collect::<Vec<InMemDicomObject>>()
         },
         [
-            (*id_filter).clone(),
-            (*name_filter).clone(),
-            (*accession_filter).clone(),
-            (*modality_filter).clone(),
-            (*description_filter).clone(),
-            (*source_ae_filter).clone(),
+            id_filter.clone(),
+            name_filter.clone(),
+            accession_filter.clone(),
+            modality_filter.clone(),
+            description_filter.clone(),
+            source_ae_filter.clone(),
         ],
     );
-    // six node refs for the search boxes at the column headers
+
+    // eight node refs for the search boxes at the column headers and the date search boxes
     let filter_node_refs = vec![
         NodeRef::default(),
         NodeRef::default(),
@@ -132,17 +160,22 @@ pub fn home() -> Html {
         NodeRef::default(),
         NodeRef::default(),
         NodeRef::default(),
+        NodeRef::default(),
+        NodeRef::default(),
     ];
-
     let filter_callback = {
         let filter_node_refs = filter_node_refs.clone();
-        Callback::from(move |_: KeyboardEvent| {
+        let start_date_filter = start_date_filter.clone();
+        let end_date_filter = end_date_filter.clone();
+        Callback::from(move |_: Event| {
             let id = filter_node_refs[0].cast::<HtmlInputElement>();
             let name = filter_node_refs[1].cast::<HtmlInputElement>();
             let accession = filter_node_refs[2].cast::<HtmlInputElement>();
             let modality = filter_node_refs[3].cast::<HtmlInputElement>();
             let description = filter_node_refs[4].cast::<HtmlInputElement>();
             let source_ae = filter_node_refs[5].cast::<HtmlInputElement>();
+            let start_date = filter_node_refs[6].cast::<HtmlInputElement>();
+            let end_date = filter_node_refs[7].cast::<HtmlInputElement>();
             if let Some(id) = id {
                 id_filter.set(id.value());
             }
@@ -161,18 +194,28 @@ pub fn home() -> Html {
             if let Some(source_ae) = source_ae {
                 source_ae_filter.set(source_ae.value());
             }
+            if let Some(start_date) = start_date {
+                let date =
+                    NaiveDate::parse_from_str(start_date.value().as_ref(), "%Y-%m-%d").unwrap();
+                start_date_filter.set(date);
+            }
+            if let Some(end_date) = end_date {
+                let date =
+                    NaiveDate::parse_from_str(end_date.value().as_ref(), "%Y-%m-%d").unwrap();
+                end_date_filter.set(date);
+            }
         })
     };
 
     let header = html_nested! {
         <thead>
             <tr>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onkeypress={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onkeypress={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onkeypress={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onkeypress={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onkeypress={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onkeypress={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
+                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
+                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
+                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
+                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
+                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
+                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
                 <th>{"Date Time"}</th>
             </tr>
         </thead>
@@ -191,7 +234,7 @@ pub fn home() -> Html {
         </tfoot>
     };
     let body = {
-        let studies = (*studies).clone();
+        let studies = studies.clone();
         move || -> Html {
             if *is_loaded {
                 html! {
@@ -232,6 +275,96 @@ pub fn home() -> Html {
             }
         }
     };
+
+    let date_filter_callback =
+        {
+            let start_date_filter = start_date_filter.clone();
+            let end_date_filter = end_date_filter.clone();
+            Callback::from(move |e: MouseEvent| {
+                end_date_filter.set(Local::now().date_naive());
+                let target = e.target();
+                let button = target
+                    .and_then(|t| t.dyn_into::<HtmlButtonElement>().ok())
+                    .unwrap();
+                match button.name().as_str() {
+                    "1D" => start_date_filter
+                        .set(end_date_filter.checked_sub_days(Days::new(1)).unwrap()),
+                    "3D" => start_date_filter
+                        .set(end_date_filter.checked_sub_days(Days::new(3)).unwrap()),
+                    "1W" => start_date_filter
+                        .set(end_date_filter.checked_sub_days(Days::new(7)).unwrap()),
+                    "1M" => start_date_filter
+                        .set(end_date_filter.checked_sub_months(Months::new(1)).unwrap()),
+                    "1Y" => start_date_filter
+                        .set(end_date_filter.checked_sub_months(Months::new(12)).unwrap()),
+                    &_ => start_date_filter.set(NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
+                }
+            })
+        };
+    let date_query_bar = {
+        let start_date_filter = start_date_filter.clone();
+        let end_date_filter = end_date_filter.clone();
+        let start_date = start_date_filter.format("%Y-%m-%d").to_string().to_owned();
+        let end_date = end_date_filter.format("%Y-%m-%d").to_string().to_owned();
+        move || -> Html {
+            html! {
+                <>
+                    <div class={classes!(String::from("flex items-center"))}>
+                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={start_date} ref={&filter_node_refs[6]} onchange={&filter_callback} />
+                        <span class={classes!(String::from("mx-4 text-gray-500"))}>{"to"}</span>
+                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={end_date} ref={&filter_node_refs[7]} onchange={&filter_callback} />
+                    </div>
+                    <div class={classes!(String::from("flex m-2"))}>
+                        <button name={"1D"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] rounded-l dark:text-white"))}>{"1d"}</button>
+                        <button name={"3D"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"3d"}</button>
+                        <button name={"1W"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1w"}</button>
+                        <button name={"1M"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1m"}</button>
+                        <button name={"1Y"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1y"}</button>
+                        <button name={"ANY"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] rounded-r dark:text-white"))}>{"Any"}</button>
+                    </div>
+                </>
+            }
+        }
+    };
+
+    let modality_filter_callback = {
+        let modalities_filter = modality_filters.clone();
+        Callback::from(move |e: MouseEvent| {
+            let target = e.target();
+            let button = target
+                .and_then(|t| t.dyn_into::<HtmlButtonElement>().ok())
+                .unwrap();
+            let requested_filter = button.name();
+            let mut filtered_modalities = modalities_filter.clone();
+            if *modalities_filter.get(requested_filter.as_str()).unwrap() {
+                filtered_modalities.entry(&requested_filter);
+                modalities_filter.set(filtered_modalities);
+            } else {
+                let mut filtered_modalities = (*modalities_filter).clone();
+                filtered_modalities.append(vec![requested_filter]);
+                modalities_filter.set(filtered_modalities);
+            }
+        })
+    };
+    let modality_query_bar = {
+        let modalities_filter = modality_filters.clone();
+        move || -> Html {
+            html! {
+                <div class={classes!(String::from("flex m-2"))}>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] rounded-l dark:text-white bg-[#ffd400]"))}>{"All"}</button>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"CR"}</button>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"DR"}</button>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"CT"}</button>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"PT"}</button>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"MR"}</button>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"US"}</button>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"XA"}</button>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"NM"}</button>
+                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] rounded-r dark:text-white"))}>{"OT"}</button>
+                </div>
+            }
+        }
+    };
     /* Colors
     NATURAL GRAY #8A8887
     ALIZARIN CRIMSON #D41C24
@@ -248,31 +381,8 @@ pub fn home() -> Html {
                 </a>
             </div>
             <div class={classes!(String::from("flex items-center justify-between"))}>
-                <div class={classes!(String::from("flex items-center"))}>
-                    <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} placeholder={"Select Date"}/>
-                    <span class={classes!(String::from("mx-4 text-gray-500"))}>{"to"}</span>
-                    <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} placeholder={"Select Date"}/>
-                </div>
-                <div class={classes!(String::from("flex m-2"))}>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] rounded-l dark:text-white"))}>{"1d"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"3d"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1w"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1m"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1y"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] rounded-r dark:text-white"))}>{"Any"}</button>
-                </div>
-                <div class={classes!(String::from("flex m-2"))}>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] rounded-l dark:text-white bg-[#ffd400]"))}>{"All"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"CR"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"DR"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"CT"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"PT"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"MR"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"US"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"XA"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"NM"}</button>
-                    <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] rounded-r dark:text-white"))}>{"OT"}</button>
-                </div>
+                {date_query_bar()}
+                {modality_query_bar()}
             </div>
         </nav>
         <div class={classes!(String::from("container mx-auto p-4 overflow-auto relative"))}>
