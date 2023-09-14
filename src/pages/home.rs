@@ -335,23 +335,23 @@ pub fn home() -> Html {
     };
     let date_query_bar = {
         let fetch_filters = fetch_filters.clone();
-        let start_date = fetch_filters
+        move || -> Html {
+            let start_date = fetch_filters
             .start_date
             .format("%Y-%m-%d")
             .to_string()
             .to_owned();
-        let end_date = fetch_filters
-            .end_date
-            .format("%Y-%m-%d")
-            .to_string()
-            .to_owned();
-        move || -> Html {
+            let end_date = fetch_filters
+                .end_date
+                .format("%Y-%m-%d")
+                .to_string()
+                .to_owned();
             let filter_duration = fetch_filters
                 .end_date
                 .signed_duration_since(fetch_filters.start_date)
                 .num_days();
             let durations =
-                HashMap::from([(1, "1D"), (3, "3D"), (7, "1W"), (30, "1M"), (365, "1Y")]);
+                vec![1, 3, 7, 30, 365];
             let base_styles = vec![
                 "px-2",
                 "py-1",
@@ -369,22 +369,28 @@ pub fn home() -> Html {
                     </div>
                     <div class={classes!(String::from("flex m-2"))}>
                         {
-                            durations.into_iter().map(|(duration, label)| {
+                            durations.iter().enumerate().map(|(idx, duration)| {
                                 let mut needed_styles = base_styles.clone();
-                                if label == "1D" {
+                                if idx == 0 {
                                     needed_styles.push("rounded-l");
                                 }
+                                if *duration == filter_duration {
+                                    needed_styles.push("bg-[#ffd400]");
+                                }
+                                let label = match duration {
+                                    1 => "1D",
+                                    3 => "3D",
+                                    7 => "1W",
+                                    30 => "1M",
+                                    365 => "1Y",
+                                    _ => "Any",
+                                };
                                 html!{
                                     <button name={label.clone()} onclick={&date_filter_callback} class={classes!(needed_styles)}>{label.clone()}</button>
                                 }
                             }).collect::<Html>()
                         }
-                        // <button name={"1D"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white rounded-l"))}>{"1D"}</button>
-                        // <button name={"3D"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"3D"}</button>
-                        // <button name={"1W"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1W"}</button>
-                        // <button name={"1M"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1M"}</button>
-                        // <button name={"1Y"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1Y"}</button>
-                        <button name={"ANY"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white rounded-r"))}>{"Any"}</button>
+                        <button name={"ANY"} onclick={&date_filter_callback} class={classes!(base_styles, "rounded-r")}>{"Any"}</button>
                     </div>
                 </>
             }
@@ -400,7 +406,7 @@ pub fn home() -> Html {
                 .unwrap();
             let requested_filter = button.name();
             let mut filtered_modalities = (*fetch_filters).clone().modalities;
-            if requested_filter == String::from("All") {
+            if requested_filter == String::from("ANY") {
                 for (_, val) in filtered_modalities.iter_mut() {
                     *val = false;
                 }
@@ -426,30 +432,27 @@ pub fn home() -> Html {
                 "hover:text-[#040404]",
                 "dark:text-white",
             ];
+            let is_any = match fetch_filters.modalities.values().all(
+                |v| *v == false
+            ) {
+                true => "bg-[#ffd400]",
+                false => "",
+            };
             html! {
                 <div class={classes!(String::from("flex m-2"))}>
                 {
-                    fetch_filters.modalities.clone().into_iter().map(|(filter, state)| {
+                    fetch_filters.modalities.clone().iter().enumerate().map(|(idx, (filter, state))| {
                         let mut needed_styles = base_styles.clone();
-                        if filter == String::from("OT") {
-                            needed_styles.push("rounded-r");
+                        if idx == 0 {
+                            needed_styles.push("rounded-l");
                         }
-                        if state {
+                        if *state {
                             needed_styles.push("bg-[#ffd400]")
                         }
                         html!{<button name={filter.clone()} onclick={&modality_filter_callback} class={classes!(needed_styles)}>{filter.clone()}</button>}
                     }).collect::<Html>()
                 }
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white rounded-l bg-[#ffd400]"))}>{"All"}</button>
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"CR"}</button>
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"DR"}</button>
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"CT"}</button>
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"PT"}</button>
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"MR"}</button>
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"US"}</button>
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"XA"}</button>
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"NM"}</button>
-                    // <button class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white rounded-r"))}>{"OT"}</button>
+                    <button name={"ANY"} onclick={&modality_filter_callback} class={classes!(base_styles, "rounded-r", is_any)}>{"Any"}</button>
                 </div>
             }
         }
