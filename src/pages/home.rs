@@ -52,7 +52,6 @@ pub fn home() -> Html {
         let is_loaded = is_loaded.clone();
         let fetch_filters = fetch_filters.clone();
         move |_: &_| {
-            // let start_date = start_date_filter.format("%Y%m%d");
             let start_date = fetch_filters.start_date.format("%Y%m%d");
             let end_date = fetch_filters.end_date.format("%Y%m%d");
             let mut modalities = String::from("");
@@ -351,7 +350,8 @@ pub fn home() -> Html {
                 .end_date
                 .signed_duration_since(fetch_filters.start_date)
                 .num_days();
-            let durations = vec![1, 3, 7, 30, 365];
+            let durations =
+                HashMap::from([(1, "1D"), (3, "3D"), (7, "1W"), (30, "1M"), (365, "1Y")]);
             let base_styles = vec![
                 "px-2",
                 "py-1",
@@ -368,6 +368,17 @@ pub fn home() -> Html {
                         <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={end_date} max={Local::now().date_naive().format("%Y-%m-%d").to_string()} ref={&filter_node_refs[7]} onchange={&filter_callback} />
                     </div>
                     <div class={classes!(String::from("flex m-2"))}>
+                        {
+                            durations.into_iter().map(|(duration, label)| {
+                                let mut needed_styles = base_styles.clone();
+                                if label == "1D" {
+                                    needed_styles.push("rounded-l");
+                                }
+                                html!{
+                                    <button name={label.clone()} onclick={&date_filter_callback} class={classes!(needed_styles)}>{label.clone()}</button>
+                                }
+                            }).collect::<Html>()
+                        }
                         // <button name={"1D"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white rounded-l"))}>{"1D"}</button>
                         // <button name={"3D"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"3D"}</button>
                         // <button name={"1W"} onclick={&date_filter_callback} class={classes!(String::from("px-2 py-1 border hover:bg-[#F5CE04] hover:text-[#040404] dark:text-white"))}>{"1W"}</button>
