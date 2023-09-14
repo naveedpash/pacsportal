@@ -1,3 +1,0 @@
-[submodule "dicom-rs"]
-	path = dicom-rs
-	url = https://github.com/naveedpash/dicom-rs

@@ -363,9 +363,11 @@ pub fn home() -> Html {
             html! {
                 <>
                     <div class={classes!(String::from("flex items-center"))}>
-                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={start_date} max={end_date.clone()} ref={&filter_node_refs[6]} onchange={&filter_callback} />
+                        // <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={start_date} max={end_date.clone()} ref={&filter_node_refs[6]} onchange={&filter_callback} />
+                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={start_date} ref={&filter_node_refs[6]} onchange={&filter_callback} />
                         <span class={classes!(String::from("mx-4 text-gray-500"))}>{"to"}</span>
-                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={end_date} max={Local::now().date_naive().format("%Y-%m-%d").to_string()} ref={&filter_node_refs[7]} onchange={&filter_callback} />
+                        // <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={end_date} max={Local::now().date_naive().format("%Y-%m-%d").to_string()} ref={&filter_node_refs[7]} onchange={&filter_callback} />
+                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={end_date} ref={&filter_node_refs[7]} onchange={&filter_callback} />
                     </div>
                     <div class={classes!(String::from("flex m-2"))}>
                         {
