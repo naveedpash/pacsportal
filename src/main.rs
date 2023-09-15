@@ -1,9 +1,8 @@
 mod pages;
-use pages::home::Home;
-use pages::reporting::Reporting;
 use pages::login::Login;
+use pages::reporting::Reporting;
+use pages::search::Search;
 
-use std::cell::RefCell;
 use std::rc::Rc;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -26,9 +25,9 @@ pub type AuthorizedContext = UseReducerHandle<Authorized>;
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
     #[at("/")]
-    Home,
-    // #[at("/login")]
-    // Login,
+    Login,
+    #[at("/search")]
+    Search,
     #[at("/reporting")]
     Reporting,
     #[at("/404")]
@@ -37,8 +36,8 @@ pub enum Route {
 
 fn switch(routes: Route) -> Html {
     match routes {
-        Route::Home => html! { <Home /> },
-        // Route::Login => html! { <Login /> }
+        Route::Search => html! { <Search /> },
+        Route::Login => html! { <Login /> },
         Route::Reporting => html! { <Reporting /> },
         Route::NotFound => html! { <h1>{"404: Not Found"}</h1> },
     }
@@ -46,9 +45,7 @@ fn switch(routes: Route) -> Html {
 
 #[function_component(App)]
 fn app() -> Html {
-    let ctx = use_reducer(|| Authorized {
-        inner: false,
-    });
+    let ctx = use_reducer(|| Authorized { inner: false });
 
     html! {
         <ContextProvider<AuthorizedContext> context={ctx}>

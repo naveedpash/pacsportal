@@ -7,6 +7,16 @@ use gloo::{console::log, net::http::Request};
 use web_sys::HtmlTextAreaElement;
 use yew::prelude::*;
 
+#[derive(Properties, PartialEq)]
+pub struct ReportProps {
+    pub patient_id: String,
+    pub patient_name: String,
+    pub accession_number: String,
+    pub modality: String,
+    pub date: String,
+    pub time: String,
+}
+
 #[function_component(Reporting)]
 pub fn reporting() -> Html {
     let report = use_state(|| String::from("")); //Textual report

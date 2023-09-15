@@ -8,6 +8,8 @@ use wasm_bindgen::JsCast;
 use web_sys::{HtmlButtonElement, HtmlInputElement};
 use yew::prelude::*;
 
+use crate::AuthorizedContext;
+
 #[derive(Clone, PartialEq)]
 struct FetchFilters {
     start_date: NaiveDate,
@@ -35,8 +37,8 @@ impl FetchFilters {
     }
 }
 
-#[function_component(Home)]
-pub fn home() -> Html {
+#[function_component(Search)]
+pub fn search() -> Html {
     let studies = use_state(|| Vec::<InMemDicomObject>::new());
     let is_loaded = use_state(|| false);
     let id_filter = use_state(|| String::from(""));
@@ -46,6 +48,7 @@ pub fn home() -> Html {
     let description_filter = use_state(|| String::from(""));
     let source_ae_filter = use_state(|| String::from(""));
     let fetch_filters = use_state(|| FetchFilters::new());
+    let auth_ctx = use_context::<AuthorizedContext>().unwrap();
 
     let fetch_callback = {
         let studies = studies.clone();
@@ -337,10 +340,10 @@ pub fn home() -> Html {
         let fetch_filters = fetch_filters.clone();
         move || -> Html {
             let start_date = fetch_filters
-            .start_date
-            .format("%Y-%m-%d")
-            .to_string()
-            .to_owned();
+                .start_date
+                .format("%Y-%m-%d")
+                .to_string()
+                .to_owned();
             let end_date = fetch_filters
                 .end_date
                 .format("%Y-%m-%d")
@@ -350,8 +353,7 @@ pub fn home() -> Html {
                 .end_date
                 .signed_duration_since(fetch_filters.start_date)
                 .num_days();
-            let durations =
-                vec![1, 3, 7, 30, 365];
+            let durations = vec![1, 3, 7, 30, 365];
             let base_styles = vec![
                 "px-2",
                 "py-1",
@@ -434,9 +436,7 @@ pub fn home() -> Html {
                 "hover:text-[#040404]",
                 "dark:text-white",
             ];
-            let is_any = match fetch_filters.modalities.values().all(
-                |v| *v == false
-            ) {
+            let is_any = match fetch_filters.modalities.values().all(|v| *v == false) {
                 true => "bg-[#ffd400]",
                 false => "",
             };
@@ -470,7 +470,7 @@ pub fn home() -> Html {
         <nav class={classes!(String::from("bg-white border-gray-200 dark:bg-gray-900 flex flex-wrap items-center justify-between p-4"))}>
             <div class={classes!("max-w-screen-xl","flex","flex-wrap","items-center","justify-between")}>
                 <a class={classes!("flex","items-center")}>
-                    <img class={classes!(String::from("h-20 mr-3 bg-white dark:bg-gray-900"))} src="assets/sch_logo.png" alt="South City Hospital Logo" />
+                    <img class={classes!(String::from("h-20 mr-3 bg-white dark:bg-gray-900"))} src="assets/sch_logo.png" alt="South City Hospital" />
                     <span class={classes!(String::from("self-center text-2xl font-semibold whitespace-nowrap dark:text-white"))}>{"South City Hospital Radiology"}</span>
                 </a>
             </div>
