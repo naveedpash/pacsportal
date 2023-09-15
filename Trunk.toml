@@ -5,9 +5,9 @@ public_url = "/"
 filehash = true
 
 [[hooks]]
-stage = "pre_build"
-command = "tailwindcss"
-command_arguments = ["-i", "input.css", "-o", "tailwind.css"]
+stage = "post_build"
+command = "sh"
+command_arguments = ["-c", "npx tailwindcss -i input.css -o tailwind.css"]
 
 [[proxy]]
 backend = "http://[::1]:8080/api/"
