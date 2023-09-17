@@ -24,7 +24,7 @@ impl FetchFilters {
             end_date: Local::now().date_naive(),
             modalities: HashMap::from([
                 (String::from("CR"), false),
-                (String::from("DR"), false),
+                (String::from("DX"), false),
                 (String::from("CT"), false),
                 (String::from("PT"), false),
                 (String::from("MR"), false),
