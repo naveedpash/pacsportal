@@ -1,6 +1,3 @@
-// use gloo::net::http;
-// use serde::{Deserialize, Serialize};
-// use wasm_bindgen_futures::spawn_local;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -53,27 +50,10 @@ pub fn login() -> Html {
                 if entered_credentials == radiologist_credentials {
                     auth_ctx.dispatch(true);
                 }
-                navigator.replace(&Route::Search)
+                navigator.replace(&Route::Search);
             } else {
                 is_error.set(true);
             }
-
-            // spawn_local(async move {
-            //     let response = http::Request::post("http://localhost:4040/login")
-            //         .header("Content-Type", "application/json")
-            //         .json(&credentials)
-            //         .unwrap()
-            //         .send()
-            //         .await;
-            //     match response {
-            //         Ok(_) => println!("Successfully authenticated!"),
-            //         Err(e) => error_message.set(e.to_string()),
-            //     }
-            // });
-
-            // if password == "ultimate_radiologist" {
-            //     navigator.
-            // }
         })
     };
 
