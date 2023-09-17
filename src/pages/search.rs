@@ -7,8 +7,9 @@ use gloo::net::http::Request;
 use wasm_bindgen::JsCast;
 use web_sys::{HtmlButtonElement, HtmlInputElement};
 use yew::prelude::*;
+use yew_router::prelude::use_navigator;
 
-use crate::AuthorizedContext;
+use crate::{AuthorizedContext, Route};
 
 #[derive(Clone, PartialEq)]
 struct FetchFilters {
@@ -49,6 +50,7 @@ pub fn search() -> Html {
     let source_ae_filter = use_state(|| String::from(""));
     let fetch_filters = use_state(|| FetchFilters::new());
     let auth_ctx = use_context::<AuthorizedContext>().unwrap();
+    let navigator = use_navigator().unwrap();
 
     let fetch_callback = {
         let studies = studies.clone();
@@ -222,34 +224,88 @@ pub fn search() -> Html {
         })
     };
 
-    let header = html_nested! {
-        <thead>
-            <tr>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
-                <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
-                <th>{"Date Time"}</th>
-            </tr>
-        </thead>
+    let header = {
+        let auth_ctx = auth_ctx.clone();
+        let filter_callback = filter_callback.clone();
+        let filter_node_refs = filter_node_refs.clone();
+        move || -> Html {
+            html! {
+                <thead>
+                    <tr>
+                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
+                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
+                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
+                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
+                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
+                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
+                        <th>{"Date Time"}</th>
+                        {
+                            if auth_ctx.inner {
+                                html! {<th></th>}
+                            } else {
+                                html!{}
+                            }
+                        }
+                    </tr>
+                </thead>
+            }
+        }
     };
-    let footer = html_nested! {
-        <tfoot>
-            <tr>
-                <th><p>{"Patient ID"}</p></th>
-                <th><p>{"Name"}</p></th>
-                <th><p>{"Accession"}</p></th>
-                <th><p>{"Modality"}</p></th>
-                <th><p>{"Description"}</p></th>
-                <th><p>{"Source AE"}</p></th>
-                <th><p>{"Date Time"}</p></th>
-            </tr>
-        </tfoot>
+    let footer = {
+        let auth_ctx = auth_ctx.clone();
+        move || -> Html {
+            html! {
+                <tfoot>
+                    <tr>
+                        <th><p>{"Patient ID"}</p></th>
+                        <th><p>{"Name"}</p></th>
+                        <th><p>{"Accession"}</p></th>
+                        <th><p>{"Modality"}</p></th>
+                        <th><p>{"Description"}</p></th>
+                        <th><p>{"Source AE"}</p></th>
+                        <th><p>{"Date Time"}</p></th>
+                        {
+                            if auth_ctx.inner {
+                                html! {<th></th>}
+                            } else {
+                                html!{}
+                            }
+                        }
+                    </tr>
+                </tfoot>
+            }
+        }
     };
+    // let header = html_nested! {
+    //     <thead>
+    //         <tr>
+    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
+    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
+    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
+    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
+    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
+    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
+    //             <th>{"Date Time"}</th>
+    //         </tr>
+    //     </thead>
+    // };
+    // let footer = html_nested! {
+    //     <tfoot>
+    //         <tr>
+    //             <th><p>{"Patient ID"}</p></th>
+    //             <th><p>{"Name"}</p></th>
+    //             <th><p>{"Accession"}</p></th>
+    //             <th><p>{"Modality"}</p></th>
+    //             <th><p>{"Description"}</p></th>
+    //             <th><p>{"Source AE"}</p></th>
+    //             <th><p>{"Date Time"}</p></th>
+    //         </tr>
+    //     </tfoot>
+    // };
     let body = {
         let studies = studies.clone();
+        let auth_ctx = auth_ctx.clone();
+        let navigator = navigator.clone();
         move || -> Html {
             if *is_loaded {
                 html! {
@@ -268,15 +324,34 @@ pub fn search() -> Html {
                                 } else {"".into()};
                                 let date = entry.get(tags::STUDY_DATE).unwrap().to_date().unwrap().to_naive_date().unwrap().format("%Y-%m-%d").to_string();
                                 let time = entry.get(tags::STUDY_TIME).unwrap().to_time().unwrap().to_naive_time().unwrap().format("%H:%M:%S").to_string();
+                                let study_uid = entry.get(tags::STUDY_INSTANCE_UID).unwrap().to_str().unwrap();
+                                let navigator = navigator.clone();
                                 html!{
-                                    <tr key={id.clone().into_owned()} class={classes!(String::from("hover:bg-[#d01c25]"))}>
-                                        <td>{id}</td>
-                                        <td>{name}</td>
-                                        <td>{accession}</td>
-                                        <td>{modalities}</td>
-                                        <td>{description}</td>
-                                        <td>{source_ae}</td>
-                                        <td>{date}{" "}{time}</td>
+                                    <tr key={id.clone().into_owned()} class="hover:bg-[#d01c25]">
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{id}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{name}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{accession}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{modalities.clone()}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{description}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{source_ae}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{date}{" "}{time}</a></td>
+                                        {
+                                            if auth_ctx.inner && !modalities.contains("SR") {
+                                                html!{
+                                                    <td>
+                                                        <button onclick={
+                                                            move |e: MouseEvent| {
+                                                                let target_uid = e.target().and_then(|t| t.dyn_into::<HtmlButtonElement>().ok()).unwrap().value();
+                                                                navigator.clone().push(&Route::Reporting { uid: target_uid });
+                                                        }} value={study_uid.clone().to_string()} type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                                                            {"Report"}
+                                                        </button>
+                                                    </td>
+                                                }
+                                            } else {
+                                                html!{}
+                                            }
+                                        }
                                     </tr>
                                 }
                             }).collect::<Html>()
@@ -477,13 +552,19 @@ pub fn search() -> Html {
             <div class={classes!(String::from("flex items-center justify-between"))}>
                 {date_query_bar()}
                 {modality_query_bar()}
+                <button onclick={
+                    let navigator = navigator.clone();
+                    move |_: MouseEvent| {
+                        navigator.replace(&Route::Login);
+                    }
+                } type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{"Logout"}</button>
             </div>
         </nav>
         <div class={classes!(String::from("container mx-auto p-4 overflow-auto relative"))}>
                 <table class={classes!(String::from("table-fixed w-full text-left"))}>
-                    {header}
+                    {header()}
                     {body()}
-                    {footer}
+                    {footer()}
                 </table>
         </div>
         </>
