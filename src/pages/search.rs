@@ -109,51 +109,51 @@ pub fn search() -> Html {
                         .unwrap()
                         .contains(id_filter.as_str())
                 })
-                .filter(|entry| {
-                    entry
-                        .element_by_name("PatientName")
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_lowercase()
-                        .contains(name_filter.as_str())
-                })
-                .filter(|entry| {
-                    entry
-                        .element_by_name("AccessionNumber")
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .contains(accession_filter.as_str())
-                })
-                .filter(|entry| {
-                    entry
-                        .element_by_name("ModalitiesInStudy")
-                        .unwrap()
-                        .strings()
-                        .unwrap()
-                        .contains(&modality_filter.as_str().to_uppercase())
-                })
-                .filter(|entry| {
-                    if let Some(description) = entry.get(tags::STUDY_DESCRIPTION) {
-                        description
-                            .string()
-                            .unwrap()
-                            .contains(&description_filter.as_str().to_uppercase())
-                    } else {
-                        false
-                    }
-                })
-                .filter(|entry| {
-                    if let Some(source_ae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
-                        source_ae
-                            .string()
-                            .unwrap()
-                            .contains(&source_ae_filter.as_str().to_uppercase())
-                    } else {
-                        false
-                    }
-                })
+                // .filter(|entry| {
+                //     entry
+                //         .element_by_name("PatientName")
+                //         .unwrap()
+                //         .to_str()
+                //         .unwrap()
+                //         .to_lowercase()
+                //         .contains(name_filter.as_str())
+                // })
+                // .filter(|entry| {
+                //     entry
+                //         .element_by_name("AccessionNumber")
+                //         .unwrap()
+                //         .to_str()
+                //         .unwrap()
+                //         .contains(accession_filter.as_str())
+                // })
+                // .filter(|entry| {
+                //     entry
+                //         .element_by_name("ModalitiesInStudy")
+                //         .unwrap()
+                //         .strings()
+                //         .unwrap()
+                //         .contains(&modality_filter.as_str().to_uppercase())
+                // })
+                // .filter(|entry| {
+                //     if let Some(description) = entry.get(tags::STUDY_DESCRIPTION) {
+                //         description
+                //             .string()
+                //             .unwrap()
+                //             .contains(&description_filter.as_str().to_uppercase())
+                //     } else {
+                //         false
+                //     }
+                // })
+                // .filter(|entry| {
+                //     if let Some(source_ae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
+                //         source_ae
+                //             .string()
+                //             .unwrap()
+                //             .contains(&source_ae_filter.as_str().to_uppercase())
+                //     } else {
+                //         false
+                //     }
+                // })
                 .collect::<Vec<InMemDicomObject>>()
         },
         [
@@ -231,13 +231,13 @@ pub fn search() -> Html {
         move || -> Html {
             html! {
                 <thead>
-                    <tr>
-                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
-                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
-                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
-                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
-                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
-                        <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
+                    <tr class="table-row">
+                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
+                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
+                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
+                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
+                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
+                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
                         <th>{"Date Time"}</th>
                         {
                             if auth_ctx.inner {
@@ -256,14 +256,14 @@ pub fn search() -> Html {
         move || -> Html {
             html! {
                 <tfoot>
-                    <tr>
-                        <th><p>{"Patient ID"}</p></th>
-                        <th><p>{"Name"}</p></th>
-                        <th><p>{"Accession"}</p></th>
-                        <th><p>{"Modality"}</p></th>
-                        <th><p>{"Description"}</p></th>
-                        <th><p>{"Source AE"}</p></th>
-                        <th><p>{"Date Time"}</p></th>
+                    <tr class="table-row">
+                        <th class="table-cell"><p>{"Patient ID"}</p></th>
+                        <th class="table-cell"><p>{"Name"}</p></th>
+                        <th class="table-cell"><p>{"Accession"}</p></th>
+                        <th class="table-cell"><p>{"Modality"}</p></th>
+                        <th class="table-cell"><p>{"Description"}</p></th>
+                        <th class="table-cell"><p>{"Source AE"}</p></th>
+                        <th class="table-cell"><p>{"Date Time"}</p></th>
                         {
                             if auth_ctx.inner {
                                 html! {<th></th>}
@@ -306,12 +306,13 @@ pub fn search() -> Html {
         let studies = studies.clone();
         let auth_ctx = auth_ctx.clone();
         let navigator = navigator.clone();
+        let entries_to_show = entries_to_show.clone();
         move || -> Html {
             if *is_loaded {
                 html! {
                     <tbody>
                         {
-                            studies.iter().map(move |entry| {
+                            entries_to_show.iter().map(move |entry| {
                                 let id = entry.get(tags::PATIENT_ID).unwrap().to_str().unwrap();
                                 let name = entry.get(tags::PATIENT_NAME).unwrap().to_str().unwrap().replace("^", " ").trim().to_owned();
                                 let accession = entry.get(tags::ACCESSION_NUMBER).unwrap().to_str().unwrap();
@@ -327,14 +328,14 @@ pub fn search() -> Html {
                                 let study_uid = entry.get(tags::STUDY_INSTANCE_UID).unwrap().to_str().unwrap();
                                 let navigator = navigator.clone();
                                 html!{
-                                    <tr key={id.clone().into_owned()} class="hover:bg-[#d01c25]">
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{id}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{name}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{accession}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{modalities.clone()}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{description}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{source_ae}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} class="block relative">{date}{" "}{time}</a></td>
+                                    <tr key={id.clone().into_owned()} class="table-row hover:bg-[#d01c25]">
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{id}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{name}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{accession}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{modalities.clone()}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{description}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{source_ae}</a></td>
+                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{date}{" "}{time}</a></td>
                                         {
                                             if auth_ctx.inner && !modalities.contains("SR") {
                                                 html!{
@@ -561,7 +562,7 @@ pub fn search() -> Html {
             </div>
         </nav>
         <div class={classes!(String::from("container mx-auto p-4 overflow-auto relative"))}>
-                <table class={classes!(String::from("table-fixed w-full text-left"))}>
+                <table class="table-fixed w-full text-left">
                     {header()}
                     {body()}
                     {footer()}
