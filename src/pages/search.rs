@@ -41,19 +41,21 @@ impl FetchFilters {
 #[function_component(Search)]
 pub fn search() -> Html {
     let studies = use_state(|| Vec::<InMemDicomObject>::new());
+    let entries_to_show = use_state(|| Vec::<InMemDicomObject>::new());
     let is_loaded = use_state(|| false);
-    let id_filter = use_state(|| String::from(""));
-    let name_filter = use_state(|| String::from(""));
-    let accession_filter = use_state(|| String::from(""));
-    let modality_filter = use_state(|| String::from(""));
-    let description_filter = use_state(|| String::from(""));
-    let source_ae_filter = use_state(|| String::from(""));
+    // let id_filter = use_state(|| String::from(""));
+    // let name_filter = use_state(|| String::from(""));
+    // let accession_filter = use_state(|| String::from(""));
+    // let modality_filter = use_state(|| String::from(""));
+    // let description_filter = use_state(|| String::from(""));
+    // let source_ae_filter = use_state(|| String::from(""));
     let fetch_filters = use_state(|| FetchFilters::new());
     let auth_ctx = use_context::<AuthorizedContext>().unwrap();
     let navigator = use_navigator().unwrap();
 
     let fetch_callback = {
         let studies = studies.clone();
+        let entries_to_show = entries_to_show.clone();
         let is_loaded = is_loaded.clone();
         let fetch_filters = fetch_filters.clone();
         move |_: &_| {
@@ -88,7 +90,8 @@ pub fn search() -> Html {
                     let object = wasm_bindgen::JsValue::from(patient_id.into_owned());
                     gloo::console::log!(object);
                 });
-                studies.set(fetched_studies);
+                studies.set(fetched_studies.clone());
+                entries_to_show.set(fetched_studies.clone());
                 is_loaded.set(true);
             });
         }
@@ -96,75 +99,75 @@ pub fn search() -> Html {
 
     use_effect_with_deps(fetch_callback, [fetch_filters.clone()]);
 
-    let entries_to_show = use_memo(
-        |_| {
-            (*studies)
-                .clone()
-                .into_iter()
-                .filter(|entry| {
-                    entry
-                        .element_by_name("PatientID")
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .contains(id_filter.as_str())
-                })
-                // .filter(|entry| {
-                //     entry
-                //         .element_by_name("PatientName")
-                //         .unwrap()
-                //         .to_str()
-                //         .unwrap()
-                //         .to_lowercase()
-                //         .contains(name_filter.as_str())
-                // })
-                // .filter(|entry| {
-                //     entry
-                //         .element_by_name("AccessionNumber")
-                //         .unwrap()
-                //         .to_str()
-                //         .unwrap()
-                //         .contains(accession_filter.as_str())
-                // })
-                // .filter(|entry| {
-                //     entry
-                //         .element_by_name("ModalitiesInStudy")
-                //         .unwrap()
-                //         .strings()
-                //         .unwrap()
-                //         .contains(&modality_filter.as_str().to_uppercase())
-                // })
-                // .filter(|entry| {
-                //     if let Some(description) = entry.get(tags::STUDY_DESCRIPTION) {
-                //         description
-                //             .string()
-                //             .unwrap()
-                //             .contains(&description_filter.as_str().to_uppercase())
-                //     } else {
-                //         false
-                //     }
-                // })
-                // .filter(|entry| {
-                //     if let Some(source_ae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
-                //         source_ae
-                //             .string()
-                //             .unwrap()
-                //             .contains(&source_ae_filter.as_str().to_uppercase())
-                //     } else {
-                //         false
-                //     }
-                // })
-                .collect::<Vec<InMemDicomObject>>()
-        },
-        [
-            id_filter.clone(),
-            name_filter.clone(),
-            accession_filter.clone(),
-            modality_filter.clone(),
-            description_filter.clone(),
-            source_ae_filter.clone(),
-        ],
-    );
+    // let entries_to_show = use_memo(
+    //     |_| {
+    //         (*studies)
+    //             .clone()
+    //             .into_iter()
+    //             .filter(|entry| {
+    //                 entry
+    //                     .element_by_name("PatientID")
+    //                     .unwrap()
+    //                     .to_str()
+    //                     .unwrap()
+    //                     .contains(id_filter.as_str())
+    //             })
+    // .filter(|entry| {
+    //     entry
+    //         .element_by_name("PatientName")
+    //         .unwrap()
+    //         .to_str()
+    //         .unwrap()
+    //         .to_lowercase()
+    //         .contains(name_filter.as_str())
+    // })
+    // .filter(|entry| {
+    //     entry
+    //         .element_by_name("AccessionNumber")
+    //         .unwrap()
+    //         .to_str()
+    //         .unwrap()
+    //         .contains(accession_filter.as_str())
+    // })
+    // .filter(|entry| {
+    //     entry
+    //         .element_by_name("ModalitiesInStudy")
+    //         .unwrap()
+    //         .strings()
+    //         .unwrap()
+    //         .contains(&modality_filter.as_str().to_uppercase())
+    // })
+    // .filter(|entry| {
+    //     if let Some(description) = entry.get(tags::STUDY_DESCRIPTION) {
+    //         description
+    //             .string()
+    //             .unwrap()
+    //             .contains(&description_filter.as_str().to_uppercase())
+    //     } else {
+    //         false
+    //     }
+    // })
+    // .filter(|entry| {
+    //     if let Some(source_ae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
+    //         source_ae
+    //             .string()
+    //             .unwrap()
+    //             .contains(&source_ae_filter.as_str().to_uppercase())
+    //     } else {
+    //         false
+    //     }
+    // })
+    //             .collect::<Vec<InMemDicomObject>>()
+    //     },
+    //     [
+    //         id_filter.clone(),
+    //         name_filter.clone(),
+    //         accession_filter.clone(),
+    //         modality_filter.clone(),
+    //         description_filter.clone(),
+    //         source_ae_filter.clone(),
+    //     ],
+    // );
 
     // eight node refs for the search boxes at the column headers and the date search boxes
     let filter_node_refs = vec![
@@ -180,33 +183,112 @@ pub fn search() -> Html {
     let filter_callback = {
         let filter_node_refs = filter_node_refs.clone();
         let fetch_filters = fetch_filters.clone();
+        let studies = studies.clone();
+        let entries_to_show = entries_to_show.clone();
         Callback::from(move |_: Event| {
-            let id = filter_node_refs[0].cast::<HtmlInputElement>();
-            let name = filter_node_refs[1].cast::<HtmlInputElement>();
-            let accession = filter_node_refs[2].cast::<HtmlInputElement>();
-            let modality = filter_node_refs[3].cast::<HtmlInputElement>();
-            let description = filter_node_refs[4].cast::<HtmlInputElement>();
-            let source_ae = filter_node_refs[5].cast::<HtmlInputElement>();
+            let id = filter_node_refs[0]
+                .cast::<HtmlInputElement>()
+                .unwrap()
+                .value();
+            let name = filter_node_refs[1]
+                .cast::<HtmlInputElement>()
+                .unwrap()
+                .value();
+            let accession = filter_node_refs[2]
+                .cast::<HtmlInputElement>()
+                .unwrap()
+                .value();
+            let modality = filter_node_refs[3]
+                .cast::<HtmlInputElement>()
+                .unwrap()
+                .value();
+            let description = filter_node_refs[4]
+                .cast::<HtmlInputElement>()
+                .unwrap()
+                .value();
+            let source_ae = filter_node_refs[5]
+                .cast::<HtmlInputElement>()
+                .unwrap()
+                .value();
             let start_date = filter_node_refs[6].cast::<HtmlInputElement>();
             let end_date = filter_node_refs[7].cast::<HtmlInputElement>();
-            if let Some(id) = id {
-                id_filter.set(id.value());
-            }
-            if let Some(name) = name {
-                name_filter.set(name.value());
-            }
-            if let Some(accession) = accession {
-                accession_filter.set(accession.value());
-            }
-            if let Some(modality) = modality {
-                modality_filter.set(modality.value());
-            }
-            if let Some(description) = description {
-                description_filter.set(description.value());
-            }
-            if let Some(source_ae) = source_ae {
-                source_ae_filter.set(source_ae.value());
-            }
+            gloo::console::log!(wasm_bindgen::JsValue::from(id.clone()));
+
+            let filtered_studies = (*studies)
+                .clone()
+                .into_iter()
+                .filter(|entry| {
+                    entry
+                        .get(tags::PATIENT_ID)
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .contains(id.as_str())
+                })
+                .filter(|entry| {
+                    entry
+                        .get(tags::PATIENT_NAME)
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_lowercase()
+                        .contains(name.as_str())
+                })
+                .filter(|entry| {
+                    entry
+                        .get(tags::ACCESSION_NUMBER)
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .contains(accession.as_str())
+                })
+                .filter(|entry| {
+                    entry
+                        .get(tags::MODALITIES_IN_STUDY)
+                        .unwrap()
+                        .strings()
+                        .unwrap()
+                        .contains(&modality.as_str().to_uppercase())
+                })
+                .filter(|entry| {
+                    if let Some(desc) = entry.get(tags::STUDY_DESCRIPTION) {
+                        desc.string()
+                            .unwrap()
+                            .contains(&description.as_str().to_uppercase())
+                    } else {
+                        false
+                    }
+                })
+                .filter(|entry| {
+                    if let Some(sourceae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
+                        sourceae
+                            .string()
+                            .unwrap()
+                            .contains(&source_ae.as_str().to_uppercase())
+                    } else {
+                        false
+                    }
+                })
+                .collect::<Vec<InMemDicomObject>>();
+            entries_to_show.set(filtered_studies);
+            // if let Some(id) = id {
+            //     id_filter.set(id.value());
+            // }
+            // if let Some(name) = name {
+            //     name_filter.set(name.value());
+            // }
+            // if let Some(accession) = accession {
+            //     accession_filter.set(accession.value());
+            // }
+            // if let Some(modality) = modality {
+            //     modality_filter.set(modality.value());
+            // }
+            // if let Some(description) = description {
+            //     description_filter.set(description.value());
+            // }
+            // if let Some(source_ae) = source_ae {
+            //     source_ae_filter.set(source_ae.value());
+            // }
             if let Some(start_date) = start_date {
                 let date =
                     NaiveDate::parse_from_str(start_date.value().as_ref(), "%Y-%m-%d").unwrap();
@@ -232,12 +314,18 @@ pub fn search() -> Html {
             html! {
                 <thead>
                     <tr class="table-row">
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
+                        <th class="table-cell">{"Patient ID"}</th>
+                        <th class="table-cell">{"Name"}</th>
+                        <th class="table-cell">{"Accession"}</th>
+                        <th class="table-cell">{"Modality"}</th>
+                        <th class="table-cell">{"Description"}</th>
+                        <th class="table-cell">{"Source AE"}</th>
+                        // <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
+                        // <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
+                        // <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
+                        // <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
+                        // <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
+                        // <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
                         <th>{"Date Time"}</th>
                         {
                             if auth_ctx.inner {
@@ -276,34 +364,7 @@ pub fn search() -> Html {
             }
         }
     };
-    // let header = html_nested! {
-    //     <thead>
-    //         <tr>
-    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
-    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
-    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
-    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
-    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
-    //             <th><input type={"text"} class={classes!(String::from("w-full block"))} onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
-    //             <th>{"Date Time"}</th>
-    //         </tr>
-    //     </thead>
-    // };
-    // let footer = html_nested! {
-    //     <tfoot>
-    //         <tr>
-    //             <th><p>{"Patient ID"}</p></th>
-    //             <th><p>{"Name"}</p></th>
-    //             <th><p>{"Accession"}</p></th>
-    //             <th><p>{"Modality"}</p></th>
-    //             <th><p>{"Description"}</p></th>
-    //             <th><p>{"Source AE"}</p></th>
-    //             <th><p>{"Date Time"}</p></th>
-    //         </tr>
-    //     </tfoot>
-    // };
     let body = {
-        let studies = studies.clone();
         let auth_ctx = auth_ctx.clone();
         let navigator = navigator.clone();
         let entries_to_show = entries_to_show.clone();
@@ -436,7 +497,6 @@ pub fn search() -> Html {
                 "border",
                 "hover:bg-[#F5CE04]",
                 "hover:text-[#040404]",
-                "dark:text-white",
             ];
             html! {
                 <>
@@ -455,7 +515,9 @@ pub fn search() -> Html {
                                     needed_styles.push("rounded-l");
                                 }
                                 if *duration == filter_duration {
-                                    needed_styles.push("bg-[#ffd400]");
+                                    needed_styles.push("bg-[#ffd400] text-[#040404] dark:text-[#040404]");
+                                } else {
+                                    needed_styles.push("dark:text-white");
                                 }
                                 let label = match duration {
                                     1 => "1D",
@@ -470,7 +532,7 @@ pub fn search() -> Html {
                                 }
                             }).collect::<Html>()
                         }
-                        <button name={"ANY"} onclick={&date_filter_callback} class={classes!(base_styles, "rounded-r")}>{"Any"}</button>
+                        <button name={"ANY"} onclick={&date_filter_callback} class={classes!(base_styles, "rounded-r","dark:text-white")}>{"Any"}</button>
                     </div>
                 </>
             }
@@ -510,10 +572,9 @@ pub fn search() -> Html {
                 "border",
                 "hover:bg-[#F5CE04]",
                 "hover:text-[#040404]",
-                "dark:text-white",
             ];
             let is_any = match fetch_filters.modalities.values().all(|v| *v == false) {
-                true => "bg-[#ffd400]",
+                true => "bg-[#ffd400] text-[#040404] dark:text-[#040404]",
                 false => "",
             };
             html! {
@@ -525,12 +586,14 @@ pub fn search() -> Html {
                             needed_styles.push("rounded-l");
                         }
                         if *state {
-                            needed_styles.push("bg-[#ffd400]")
+                            needed_styles.push("bg-[#ffd400] text-[#040404] dark:text-[#040404]")
+                        } else {
+                            needed_styles.push("dark:text-white");
                         }
                         html!{<button name={filter.clone()} onclick={&modality_filter_callback} class={classes!(needed_styles)}>{filter.clone()}</button>}
                     }).collect::<Html>()
                 }
-                    <button name={"ANY"} onclick={&modality_filter_callback} class={classes!(base_styles, "rounded-r", is_any)}>{"Any"}</button>
+                    <button name={"ANY"} onclick={&modality_filter_callback} class={classes!(base_styles, "rounded-r","dark:text-white", is_any)}>{"Any"}</button>
                 </div>
             }
         }

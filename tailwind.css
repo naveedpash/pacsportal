@@ -1039,6 +1039,11 @@ select {
   letter-spacing: -0.025em;
 }
 
+.text-\[\#040404\] {
+  --tw-text-opacity: 1;
+  color: rgb(4 4 4 / var(--tw-text-opacity));
+}
+
 .text-gray-500 {
   --tw-text-opacity: 1;
   color: rgb(107 114 128 / var(--tw-text-opacity));
@@ -1190,6 +1195,11 @@ select {
   .dark\:bg-gray-900 {
     --tw-bg-opacity: 1;
     background-color: rgb(17 24 39 / var(--tw-bg-opacity));
+  }
+
+  .dark\:text-\[\#040404\] {
+    --tw-text-opacity: 1;
+    color: rgb(4 4 4 / var(--tw-text-opacity));
   }
 
   .dark\:text-white {
