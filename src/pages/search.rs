@@ -25,7 +25,7 @@ impl FetchFilters {
             end_date: Local::now().date_naive(),
             modalities: HashMap::from([
                 (String::from("CR"), false),
-                (String::from("DX"), false),
+                (String::from("DR"), false),
                 (String::from("CT"), false),
                 (String::from("PT"), false),
                 (String::from("MR"), false),
@@ -42,6 +42,7 @@ impl FetchFilters {
 pub fn search() -> Html {
     let studies = use_state(|| Vec::<InMemDicomObject>::new());
     let is_loaded = use_state(|| false);
+    let loaded_status = use_state(|| String::from("Loading..."));
     let id_filter = use_state(|| String::from(""));
     let name_filter = use_state(|| String::from(""));
     let accession_filter = use_state(|| String::from(""));
@@ -54,6 +55,7 @@ pub fn search() -> Html {
 
     let fetch_callback = {
         let studies = studies.clone();
+        let loaded_status = loaded_status.clone();
         let is_loaded = is_loaded.clone();
         let fetch_filters = fetch_filters.clone();
         move |_: &_| {
@@ -68,103 +70,123 @@ pub fn search() -> Html {
                         modalities = format!("{}&ModalitiesInStudy={}", modalities, modality);
                     }
                 });
+            gloo::console::log!(wasm_bindgen::JsValue::from(modalities.clone()));
+            is_loaded.set(false);
+            loaded_status.set(String::from("Loading..."));
             wasm_bindgen_futures::spawn_local(async move {
-                let fetched_studies: Vec<serde_json::Value> = Request::get(&format!(
-                        "http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies?StudyDate={}-{}{}&includefield=StudyDescription&includefield=SourceApplicationEntityTitle",
-                        start_date, end_date, modalities,
-                    ))
-                    .send()
-                    .await
-                    .unwrap()
-                    .json()
-                    .await
-                    .unwrap();
-                let fetched_studies: Vec<InMemDicomObject> = fetched_studies
-                    .iter()
-                    .map(|study| dicom_json::from_value(study.clone()).unwrap())
-                    .collect();
-                fetched_studies.iter().for_each(|study| {
+                let fetched_details = Request::get(&format!(
+                    "http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies?StudyDate={}-{}{}&includefield=StudyDescription&includefield=SourceApplicationEntityTitle",
+                    start_date, end_date, modalities,
+                ))
+                .send()
+                .await;
+                match fetched_details {
+                    Ok(res) => {
+                        if res.status() != 200 {
+                            if res.status() == 204 {
+                                loaded_status.set(format!("There are no search results for these search parameters. Please change your parameters and try again."));
+                            } else {
+                                loaded_status.set(format!("The server sent back an error: {}. Please report this to your system administrator.", res.status()));
+                            }
+                        } else {
+                            let res_json = res.json::<Vec<serde_json::Value>>().await;
+                            match res_json {
+                                Ok(data) => {
+                                    let fetched_data: Vec<InMemDicomObject> = data.iter().map(|series| dicom_json::from_value(series.clone()).unwrap()).collect();
+                                    studies.set(fetched_data.clone()); // because we QIDO'd a single StudyInstanceUID, we will get only one result
+                                    is_loaded.set(true);
+                                },
+                                Err(_) => loaded_status.set(format!("Unable to parse data from server. Please report this to your system administrator.")),
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        loaded_status.set(String::from("Unable to reach the server. Please try again later or contact your system administrator."));
+                    }
+                };
+                // if studies.is_empty() {
+                //     loaded_status.set(String::from("There are no st"))
+                // }
+                studies.clone().iter().for_each(|study| {
                     let patient_id = study.element(tags::PATIENT_NAME).unwrap().to_str().unwrap();
                     let object = wasm_bindgen::JsValue::from(patient_id.into_owned());
                     gloo::console::log!(object);
                 });
-                studies.set(fetched_studies);
-                is_loaded.set(true);
             });
         }
     };
 
     use_effect_with_deps(fetch_callback, [fetch_filters.clone()]);
 
-    let entries_to_show = use_memo(
-        |_| {
-            (*studies)
-                .clone()
-                .into_iter()
-                .filter(|entry| {
-                    entry
-                        .element_by_name("PatientID")
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .contains(id_filter.as_str())
-                })
-                // .filter(|entry| {
-                //     entry
-                //         .element_by_name("PatientName")
-                //         .unwrap()
-                //         .to_str()
-                //         .unwrap()
-                //         .to_lowercase()
-                //         .contains(name_filter.as_str())
-                // })
-                // .filter(|entry| {
-                //     entry
-                //         .element_by_name("AccessionNumber")
-                //         .unwrap()
-                //         .to_str()
-                //         .unwrap()
-                //         .contains(accession_filter.as_str())
-                // })
-                // .filter(|entry| {
-                //     entry
-                //         .element_by_name("ModalitiesInStudy")
-                //         .unwrap()
-                //         .strings()
-                //         .unwrap()
-                //         .contains(&modality_filter.as_str().to_uppercase())
-                // })
-                // .filter(|entry| {
-                //     if let Some(description) = entry.get(tags::STUDY_DESCRIPTION) {
-                //         description
-                //             .string()
-                //             .unwrap()
-                //             .contains(&description_filter.as_str().to_uppercase())
-                //     } else {
-                //         false
-                //     }
-                // })
-                // .filter(|entry| {
-                //     if let Some(source_ae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
-                //         source_ae
-                //             .string()
-                //             .unwrap()
-                //             .contains(&source_ae_filter.as_str().to_uppercase())
-                //     } else {
-                //         false
-                //     }
-                // })
-                .collect::<Vec<InMemDicomObject>>()
-        },
-        [
-            id_filter.clone(),
-            name_filter.clone(),
-            accession_filter.clone(),
-            modality_filter.clone(),
-            description_filter.clone(),
-            source_ae_filter.clone(),
-        ],
-    );
+    // let entries_to_show = use_memo(
+    //     |_| {
+    //         (*studies)
+    //             .clone()
+    //             .into_iter()
+    //             .filter(|entry| {
+    //                 entry
+    //                     .element_by_name("PatientID")
+    //                     .unwrap()
+    //                     .to_str()
+    //                     .unwrap()
+    //                     .contains(id_filter.as_str())
+    //             })
+    //             .filter(|entry| {
+    //                 entry
+    //                     .element_by_name("PatientName")
+    //                     .unwrap()
+    //                     .to_str()
+    //                     .unwrap()
+    //                     .to_lowercase()
+    //                     .contains(name_filter.as_str())
+    //             })
+    //             .filter(|entry| {
+    //                 entry
+    //                     .element_by_name("AccessionNumber")
+    //                     .unwrap()
+    //                     .to_str()
+    //                     .unwrap()
+    //                     .contains(accession_filter.as_str())
+    //             })
+    //             .filter(|entry| {
+    //                 entry
+    //                     .element_by_name("ModalitiesInStudy")
+    //                     .unwrap()
+    //                     .strings()
+    //                     .unwrap()
+    //                     .contains(&modality_filter.as_str().to_uppercase())
+    //             })
+    //             .filter(|entry| {
+    //                 if let Some(description) = entry.get(tags::STUDY_DESCRIPTION) {
+    //                     description
+    //                         .string()
+    //                         .unwrap()
+    //                         .contains(&description_filter.as_str().to_uppercase())
+    //                 } else {
+    //                     false
+    //                 }
+    //             })
+    //             .filter(|entry| {
+    //                 if let Some(source_ae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
+    //                     source_ae
+    //                         .string()
+    //                         .unwrap()
+    //                         .contains(&source_ae_filter.as_str().to_uppercase())
+    //                 } else {
+    //                     false
+    //                 }
+    //             })
+    //             .collect::<Vec<InMemDicomObject>>()
+    //     },
+    //     [
+    //         id_filter.clone(),
+    //         name_filter.clone(),
+    //         accession_filter.clone(),
+    //         modality_filter.clone(),
+    //         description_filter.clone(),
+    //         source_ae_filter.clone(),
+    //     ],
+    // );
 
     // eight node refs for the search boxes at the column headers and the date search boxes
     let filter_node_refs = vec![
@@ -180,6 +202,12 @@ pub fn search() -> Html {
     let filter_callback = {
         let filter_node_refs = filter_node_refs.clone();
         let fetch_filters = fetch_filters.clone();
+        let id_filter = id_filter.clone();
+        let name_filter = name_filter.clone();
+        let accession_filter = accession_filter.clone();
+        let modality_filter = modality_filter.clone();
+        let description_filter = description_filter.clone();
+        let source_ae_filter = source_ae_filter.clone();
         Callback::from(move |_: Event| {
             let id = filter_node_refs[0].cast::<HtmlInputElement>();
             let name = filter_node_refs[1].cast::<HtmlInputElement>();
@@ -230,15 +258,15 @@ pub fn search() -> Html {
         let filter_node_refs = filter_node_refs.clone();
         move || -> Html {
             html! {
-                <thead>
+                <thead class="h-1">
                     <tr class="table-row">
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
-                        <th><input type={"text"} class="table-cell w-full block" onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
-                        <th>{"Date Time"}</th>
+                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
+                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
+                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
+                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
+                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
+                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
+                        <th class="">{"Date Time"}</th>
                         {
                             if auth_ctx.inner {
                                 html! {<th></th>}
@@ -303,16 +331,21 @@ pub fn search() -> Html {
     //     </tfoot>
     // };
     let body = {
+        let loaded_status = loaded_status.clone();
         let studies = studies.clone();
-        let auth_ctx = auth_ctx.clone();
+        let id_filter = id_filter.clone();
+        let name_filter = name_filter.clone();
+        let accession_filter = accession_filter.clone();
+        let modality_filter = modality_filter.clone();
+        let description_filter = description_filter.clone();
+        let source_ae_filter = source_ae_filter.clone();
         let navigator = navigator.clone();
-        let entries_to_show = entries_to_show.clone();
         move || -> Html {
             if *is_loaded {
                 html! {
                     <tbody>
                         {
-                            entries_to_show.iter().map(move |entry| {
+                            studies.iter().map(move |entry| {
                                 let id = entry.get(tags::PATIENT_ID).unwrap().to_str().unwrap();
                                 let name = entry.get(tags::PATIENT_NAME).unwrap().to_str().unwrap().replace("^", " ").trim().to_owned();
                                 let accession = entry.get(tags::ACCESSION_NUMBER).unwrap().to_str().unwrap();
@@ -326,34 +359,38 @@ pub fn search() -> Html {
                                 let date = entry.get(tags::STUDY_DATE).unwrap().to_date().unwrap().to_naive_date().unwrap().format("%Y-%m-%d").to_string();
                                 let time = entry.get(tags::STUDY_TIME).unwrap().to_time().unwrap().to_naive_time().unwrap().format("%H:%M:%S").to_string();
                                 let study_uid = entry.get(tags::STUDY_INSTANCE_UID).unwrap().to_str().unwrap();
+                                let to_show = id.contains(id_filter.as_str()) && name.to_lowercase().contains(name_filter.as_str()) && accession.contains(accession_filter.as_str()) && modalities.contains(&modality_filter.as_str().to_uppercase()) && description.to_lowercase().contains(description_filter.as_str()) && source_ae.contains(source_ae_filter.as_str());
                                 let navigator = navigator.clone();
                                 html!{
-                                    <tr key={id.clone().into_owned()} class="table-row hover:bg-[#d01c25]">
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{id}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{name}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{accession}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{modalities.clone()}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{description}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{source_ae}</a></td>
-                                        <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{date}{" "}{time}</a></td>
-                                        {
-                                            if auth_ctx.inner && !modalities.contains("SR") {
-                                                html!{
-                                                    <td>
-                                                        <button onclick={
-                                                            move |e: MouseEvent| {
-                                                                let target_uid = e.target().and_then(|t| t.dyn_into::<HtmlButtonElement>().ok()).unwrap().value();
-                                                                navigator.clone().push(&Route::Reporting { uid: target_uid });
-                                                        }} value={study_uid.clone().to_string()} type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                                            {"Report"}
-                                                        </button>
-                                                    </td>
+                                    if to_show {
+                                        <tr key={id.clone().into_owned()} class="table-row hover:bg-[#d01c25]">
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{id}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{name}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{accession}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{modalities.clone()}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{description}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{source_ae}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{date}{" "}{time}</a></td>
+                                            {
+                                                if auth_ctx.inner && !modalities.contains("SR") {
+                                                    html!{
+                                                        <td>
+                                                            <button onclick={
+                                                                move |e: MouseEvent| {
+                                                                    let target_uid = e.target().and_then(|t| t.dyn_into::<HtmlButtonElement>().ok()).unwrap().value();
+                                                                    navigator.clone().push(&Route::Reporting { uid: target_uid });
+                                                            }} value={study_uid.clone().to_string()} type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                                                                {"Report"}
+                                                            </button>
+                                                        </td>
+                                                    }
+                                                } else {
+                                                    html!{}
                                                 }
-                                            } else {
-                                                html!{}
                                             }
-                                        }
-                                    </tr>
+                                        </tr>
+                                    }
+                                    
                                 }
                             }).collect::<Html>()
                         }
@@ -361,7 +398,13 @@ pub fn search() -> Html {
                 }
             } else {
                 html! {
-                    <div>{"Loading..."}</div>
+                    <tbody>
+                        <tr>
+                            <td colspan="7">
+                                {(*loaded_status).clone()}
+                            </td>
+                        </tr>
+                    </tbody>
                 }
             }
         }
@@ -441,11 +484,11 @@ pub fn search() -> Html {
             html! {
                 <>
                     <div class={classes!(String::from("flex items-center"))}>
-                        // <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={start_date} max={end_date.clone()} ref={&filter_node_refs[6]} onchange={&filter_callback} />
-                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={start_date} ref={&filter_node_refs[6]} onchange={&filter_callback} />
+                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={start_date} max={end_date.clone()} ref={&filter_node_refs[6]} onchange={&filter_callback} />
+                        // <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={start_date} ref={&filter_node_refs[6]} onchange={&filter_callback} />
                         <span class={classes!(String::from("mx-4 text-gray-500"))}>{"to"}</span>
-                        // <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={end_date} max={Local::now().date_naive().format("%Y-%m-%d").to_string()} ref={&filter_node_refs[7]} onchange={&filter_callback} />
-                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={end_date} ref={&filter_node_refs[7]} onchange={&filter_callback} />
+                        <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={end_date} max={Local::now().date_naive().format("%Y-%m-%d").to_string()} ref={&filter_node_refs[7]} onchange={&filter_callback} />
+                        // <input type={"date"} class={classes!(String::from("px-2 py-1 border"))} value={end_date} ref={&filter_node_refs[7]} onchange={&filter_callback} />
                     </div>
                     <div class={classes!(String::from("flex m-2"))}>
                         {
@@ -561,8 +604,8 @@ pub fn search() -> Html {
                 } type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{"Logout"}</button>
             </div>
         </nav>
-        <div class={classes!(String::from("container mx-auto p-4 overflow-auto relative"))}>
-                <table class="table-fixed w-full text-left">
+        <div class="overflow-x-auto">
+                <table id="myTable" class="table-responsive min-w-full md:table-auto">
                     {header()}
                     {body()}
                     {footer()}

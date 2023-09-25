@@ -705,44 +705,6 @@ select {
   --tw-backdrop-sepia:  ;
 }
 
-.container {
-  width: 100%;
-}
-
-@media (min-width: 640px) {
-  .container {
-    max-width: 640px;
-  }
-}
-
-@media (min-width: 768px) {
-  .container {
-    max-width: 768px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container {
-    max-width: 1024px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .container {
-    max-width: 1280px;
-  }
-}
-
-@media (min-width: 1536px) {
-  .container {
-    max-width: 1536px;
-  }
-}
-
-.relative {
-  position: relative;
-}
-
 .m-2 {
   margin: 0.5rem;
 }
@@ -809,6 +771,10 @@ select {
   display: contents;
 }
 
+.h-1 {
+  height: 0.25rem;
+}
+
 .h-20 {
   height: 5rem;
 }
@@ -829,12 +795,12 @@ select {
   width: 100%;
 }
 
-.max-w-screen-xl {
-  max-width: 1280px;
+.min-w-full {
+  min-width: 100%;
 }
 
-.table-fixed {
-  table-layout: fixed;
+.max-w-screen-xl {
+  max-width: 1280px;
 }
 
 .flex-col {
@@ -871,8 +837,8 @@ select {
   align-self: center;
 }
 
-.overflow-auto {
-  overflow: auto;
+.overflow-x-auto {
+  overflow-x: auto;
 }
 
 .whitespace-nowrap {
@@ -995,10 +961,6 @@ select {
 .py-2\.5 {
   padding-top: 0.625rem;
   padding-bottom: 0.625rem;
-}
-
-.text-left {
-  text-align: left;
 }
 
 .text-center {
@@ -1257,6 +1219,10 @@ select {
 }
 
 @media (min-width: 768px) {
+  .md\:table-auto {
+    table-layout: auto;
+  }
+
   .md\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

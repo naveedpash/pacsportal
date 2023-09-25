@@ -1,17 +1,23 @@
-<!DOCTYPE html><html><head>
+<!DOCTYPE html><html lang="en-us"><head>
   <meta charset="utf-8">
   <link rel="shortcut icon" type="image/x-icon" href="./assets/sch_logo.png">
   <title>Radiology - South City Hospital</title>
   <base href="/">
-  <link rel="stylesheet" href="/tailwind-952a89d3ec1ee559.css">
+  <link rel="stylesheet" href="/tailwind-46129821b37e5840.css">
   
+  <script src="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"></script>
+  <link rel="stylesheet" href="https//cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js">
 
-<link rel="preload" href="/pacsportal-d5d300e14d8c5851_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-<link rel="modulepreload" href="/pacsportal-d5d300e14d8c5851.js"></head>
+
+<link rel="preload" href="/pacsportal-1490686db4483ea4_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+<link rel="modulepreload" href="/pacsportal-1490686db4483ea4.js"></head>
 
 <body>loading...
+<script>
+  let table = new DataTable('#myTable');
+</script>
 
-<script type="module">import init from '/pacsportal-d5d300e14d8c5851.js';init('/pacsportal-d5d300e14d8c5851_bg.wasm');</script><script>(function () {
+<script type="module">import init from '/pacsportal-1490686db4483ea4.js';init('/pacsportal-1490686db4483ea4_bg.wasm');</script><script>(function () {
     var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     var url = protocol + '//' + window.location.host + '/_trunk/ws';
     var poll_interval = 5000;
