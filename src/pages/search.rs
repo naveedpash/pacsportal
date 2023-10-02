@@ -41,7 +41,6 @@ impl FetchFilters {
 #[function_component(Search)]
 pub fn search() -> Html {
     let studies = use_state(|| Vec::<InMemDicomObject>::new());
-    let entries_to_show = use_state(|| Vec::<InMemDicomObject>::new());
     let is_loaded = use_state(|| false);
     let loaded_status = use_state(|| String::from("Loading..."));
     let id_filter = use_state(|| String::from(""));
@@ -94,7 +93,7 @@ pub fn search() -> Html {
                             match res_json {
                                 Ok(data) => {
                                     let fetched_data: Vec<InMemDicomObject> = data.iter().map(|series| dicom_json::from_value(series.clone()).unwrap()).collect();
-                                    studies.set(fetched_data.clone()); // because we QIDO'd a single StudyInstanceUID, we will get only one result
+                                    studies.set(fetched_data.clone());
                                     is_loaded.set(true);
                                 },
                                 Err(_) => loaded_status.set(format!("Unable to parse data from server. Please report this to your system administrator.")),
@@ -105,9 +104,7 @@ pub fn search() -> Html {
                         loaded_status.set(String::from("Unable to reach the server. Please try again later or contact your system administrator."));
                     }
                 };
-                // if studies.is_empty() {
-                //     loaded_status.set(String::from("There are no st"))
-                // }
+
                 studies.clone().iter().for_each(|study| {
                     let patient_id = study.element(tags::PATIENT_NAME).unwrap().to_str().unwrap();
                     let object = wasm_bindgen::JsValue::from(patient_id.into_owned());
@@ -211,108 +208,38 @@ pub fn search() -> Html {
         let source_ae_filter = source_ae_filter.clone();
         Callback::from(move |_: Event| {
             let id = filter_node_refs[0]
-                .cast::<HtmlInputElement>()
-                .unwrap()
-                .value();
+                .cast::<HtmlInputElement>();
             let name = filter_node_refs[1]
-                .cast::<HtmlInputElement>()
-                .unwrap()
-                .value();
+                .cast::<HtmlInputElement>();
             let accession = filter_node_refs[2]
-                .cast::<HtmlInputElement>()
-                .unwrap()
-                .value();
+                .cast::<HtmlInputElement>();
             let modality = filter_node_refs[3]
-                .cast::<HtmlInputElement>()
-                .unwrap()
-                .value();
+                .cast::<HtmlInputElement>();
             let description = filter_node_refs[4]
-                .cast::<HtmlInputElement>()
-                .unwrap()
-                .value();
+                .cast::<HtmlInputElement>();
             let source_ae = filter_node_refs[5]
-                .cast::<HtmlInputElement>()
-                .unwrap()
-                .value();
+                .cast::<HtmlInputElement>();
             let start_date = filter_node_refs[6].cast::<HtmlInputElement>();
             let end_date = filter_node_refs[7].cast::<HtmlInputElement>();
-            gloo::console::log!(wasm_bindgen::JsValue::from(id.clone()));
-
-            let filtered_studies = (*studies)
-                .clone()
-                .into_iter()
-                .filter(|entry| {
-                    entry
-                        .get(tags::PATIENT_ID)
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .contains(id.as_str())
-                })
-                .filter(|entry| {
-                    entry
-                        .get(tags::PATIENT_NAME)
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_lowercase()
-                        .contains(name.as_str())
-                })
-                .filter(|entry| {
-                    entry
-                        .get(tags::ACCESSION_NUMBER)
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .contains(accession.as_str())
-                })
-                .filter(|entry| {
-                    entry
-                        .get(tags::MODALITIES_IN_STUDY)
-                        .unwrap()
-                        .strings()
-                        .unwrap()
-                        .contains(&modality.as_str().to_uppercase())
-                })
-                .filter(|entry| {
-                    if let Some(desc) = entry.get(tags::STUDY_DESCRIPTION) {
-                        desc.string()
-                            .unwrap()
-                            .contains(&description.as_str().to_uppercase())
-                    } else {
-                        false
-                    }
-                })
-                .filter(|entry| {
-                    if let Some(sourceae) = entry.get(tags::SOURCE_APPLICATION_ENTITY_TITLE) {
-                        sourceae
-                            .string()
-                            .unwrap()
-                            .contains(&source_ae.as_str().to_uppercase())
-                    } else {
-                        false
-                    }
-                })
-                .collect::<Vec<InMemDicomObject>>();
-            entries_to_show.set(filtered_studies);
-            // if let Some(id) = id {
-            //     id_filter.set(id.value());
-            // }
-            // if let Some(name) = name {
-            //     name_filter.set(name.value());
-            // }
-            // if let Some(accession) = accession {
-            //     accession_filter.set(accession.value());
-            // }
-            // if let Some(modality) = modality {
-            //     modality_filter.set(modality.value());
-            // }
-            // if let Some(description) = description {
-            //     description_filter.set(description.value());
-            // }
-            // if let Some(source_ae) = source_ae {
-            //     source_ae_filter.set(source_ae.value());
-            // }
+  
+            if let Some(id) = id {
+                id_filter.set(id.value());
+            }
+            if let Some(name) = name {
+                name_filter.set(name.value());
+            }
+            if let Some(accession) = accession {
+                accession_filter.set(accession.value());
+            }
+            if let Some(modality) = modality {
+                modality_filter.set(modality.value());
+            }
+            if let Some(description) = description {
+                description_filter.set(description.value());
+            }
+            if let Some(source_ae) = source_ae {
+                source_ae_filter.set(source_ae.value());
+            }
             if let Some(start_date) = start_date {
                 let date =
                     NaiveDate::parse_from_str(start_date.value().as_ref(), "%Y-%m-%d").unwrap();
@@ -658,12 +585,17 @@ pub fn search() -> Html {
                 } type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{"Logout"}</button>
             </div>
         </nav>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto p-2">
                 <table id="myTable" class="table-responsive min-w-full md:table-auto">
                     {header()}
                     {body()}
                     {footer()}
                 </table>
+                // <script>
+                //     {"$(document).ready( function () {
+                //         $('#myTable').DataTable();
+                //     });"}
+                // </script>
         </div>
         </>
     }

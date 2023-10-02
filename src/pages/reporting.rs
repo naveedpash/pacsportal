@@ -4,7 +4,7 @@ use dicom::{
     dictionary_std::{tags, uids},
     object::InMemDicomObject,
 };
-use gloo::{console::log, net::http::Request};
+use gloo::net::http::Request;
 use uuid::Uuid;
 use web_sys::HtmlTextAreaElement;
 use yew::prelude::*;
@@ -19,57 +19,70 @@ pub struct ReportProps {
 
 #[function_component(Reporting)]
 pub fn reporting(props: &ReportProps) -> Html {
-    let report = use_state(|| String::from("")); //Textual report
-    let report_node_ref = NodeRef::default();
-    let is_retrieving = use_state(|| true);
     let retrieving_status = use_state(|| String::from("Loading..."));
     let study_details = use_state(|| InMemDicomObject::new_empty());
+    let report_node_ref = use_node_ref();
     let navigator = use_navigator().unwrap();
 
-    use_effect({
-        let study_details = study_details.clone();
-        let is_retrieving = is_retrieving.clone();
-        let retrieving_status = retrieving_status.clone();
-        let study_uid = props.study_uid.clone();
-        move || {
-            wasm_bindgen_futures::spawn_local(async move {
-                let include_fields = "&includefield=StudyID&includefield=PatientBirthDate&includefield=PatientSex&includefield=Manufacturer";
-                let fetched_details = Request::get(&format!(
+    use_effect_with_deps(
+        {
+            let study_uid = props.study_uid.clone();
+            let study_details = study_details.clone();
+            let retrieving_status = retrieving_status.clone();
+            move |_| {
+                wasm_bindgen_futures::spawn_local(async move {
+                    let include_fields = "&includefield=StudyID&includefield=PatientBirthDate&includefield=PatientSex&includefield=Manufacturer";
+                    let fetched_details = Request::get(&format!(
                     "http://210.56.0.36:8080/dcm4chee-arc/aets/SCHPACS2/rs/studies?StudyInstanceUID={}{}",
                     study_uid, include_fields
                 ))
                 .send()
                 .await;
-                match fetched_details {
-                    Ok(res) => {
-                        if res.status() != 200 {
-                            retrieving_status.set(format!("The server sent back an error: {}. Please report this to your system administrator.", res.status()));
+                    match fetched_details {
+                        Ok(res) => {
+                            if res.status() != 200 {
+                                if res.status() == 204 {
+                                    retrieving_status.set(format!("There are no search results for these search parameters. Please change your parameters and try again."));
+                                } else {
+                                    retrieving_status.set(format!("The server sent back an error: {}. Please report this to your system administrator.", res.status()));
+                                }
+                            } else {
+                                let res_json = res.json::<Vec<serde_json::Value>>().await;
+                                match res_json {
+                                Ok(data) => {
+                                    let fetched_data: Vec<InMemDicomObject> = data.iter().map(|series| dicom_json::from_value(series.clone()).unwrap()).collect();
+                                    study_details.set(fetched_data[0].clone()); // because we QIDO'd a single StudyInstanceUID, we will get only one result
+                                    // is_loaded.set(true);
+                                    retrieving_status.set(format!(""));
+                                },
+                                Err(_) => retrieving_status.set(format!("Unable to parse data from server. Please report this to your system administrator.")),
+                            }
+                            }
                         }
-                        let res_json = res.json::<Vec<serde_json::Value>>().await;
-                        match res_json {
-                            Ok(data) => {
-                                let fetched_data: Vec<InMemDicomObject> = data.iter().map(|series| dicom_json::from_value(series.clone()).unwrap()).collect();
-                                study_details.set(fetched_data[0].clone()); // because we QIDO'd a single StudyInstanceUID, we will get only one result
-                                is_retrieving.set(false);
-                            },
-                            Err(_) => retrieving_status.set(format!("Unable to parse data from server. Please report this to your system administrator.")),
+                        Err(_) => {
+                            retrieving_status.set(String::from("Unable to reach the server. Please try again later or contact your system administrator."));
                         }
-                    }
-                    Err(_) => {
-                        retrieving_status.set(String::from("Unable to reach the server. Please try again later or contact your system administrator."));
-                    }
-                };
-            })
-        }
-    });
+                    };
+                })
+            }
+        },
+        (),
+    );
 
-    let onsubmit = {
-        let report = report.clone();
-        let study_details = study_details.clone();
+    let onclick = {
         let study_uid = props.study_uid.clone();
+        let study_details = study_details.clone();
+        let report_node_ref = report_node_ref.clone();
         let navigator = navigator.clone();
-        Callback::from(move |event: SubmitEvent| {
+        Callback::from(move |event: MouseEvent| {
             event.prevent_default();
+            let mut report = String::from("");
+            let report_textarea = report_node_ref.cast::<HtmlTextAreaElement>();
+
+            if let Some(report_textarea) = report_textarea {
+                report = report_textarea.value();
+            }
+
             let mut sr = InMemDicomObject::from_element_iter([
                 DataElement::new(tags::SOP_CLASS_UID, VR::UI, uids::BASIC_TEXT_SR_STORAGE),
                 DataElement::new(
@@ -88,24 +101,31 @@ pub fn reporting(props: &ReportProps) -> Html {
                 DataElement::new(
                     tags::CONTENT_TIME,
                     VR::TM,
-                    Local::now().date_naive().format("%H%M%S").to_string(),
+                    Local::now().naive_local().format("%H%M%S").to_string(),
                 ),
                 study_details
                     .get(tags::ACCESSION_NUMBER)
                     .unwrap()
                     .to_owned(),
                 DataElement::new(tags::MODALITY, VR::CS, "SR"),
-                study_details.get(tags::MANUFACTURER).unwrap().to_owned(),
+                match study_details.get(tags::MANUFACTURER) {
+                    Some(_) => study_details.get(tags::MANUFACTURER).unwrap().to_owned(),
+                    None => DataElement::empty(tags::MANUFACTURER, VR::LO),
+                },
                 study_details
                     .get(tags::REFERRING_PHYSICIAN_NAME)
                     .unwrap()
                     .to_owned(), // handle unwrap() errors with if let
                 study_details.get(tags::PATIENT_NAME).unwrap().to_owned(),
                 study_details.get(tags::PATIENT_ID).unwrap().to_owned(),
-                study_details
-                    .get(tags::PATIENT_BIRTH_DATE)
-                    .unwrap()
-                    .to_owned(), // handle unwrap() errors with if let
+                match study_details.get(tags::PATIENT_BIRTH_DATE) {
+                    Some(_) => study_details.get(tags::PATIENT_BIRTH_DATE).unwrap().to_owned(),
+                    None => DataElement::empty(tags::PATIENT_BIRTH_DATE, VR::DA),
+                },
+                // study_details
+                //     .get(tags::PATIENT_BIRTH_DATE)
+                //     .unwrap()
+                //     .to_owned(), // handle unwrap() errors with if let
                 study_details.get(tags::PATIENT_SEX).unwrap().to_owned(),
                 DataElement::new(
                     tags::STUDY_INSTANCE_UID,
@@ -154,14 +174,12 @@ pub fn reporting(props: &ReportProps) -> Html {
                 ),
                 DataElement::new(tags::COMPLETION_FLAG, VR::CS, "COMPLETE"),
                 DataElement::new(tags::VERIFICATION_FLAG, VR::CS, "VERIFIED"),
-                DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
-                DataElement::new(tags::TEXT_VALUE, VR::UT, (*report).clone()),
             ]);
 
             let report_text = InMemDicomObject::from_element_iter([
                 DataElement::new(tags::RELATIONSHIP_TYPE, VR::CS, "CONTAINS"),
                 DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
-                DataElement::new(tags::TEXT_VALUE, VR::UT, (*report).clone()),
+                DataElement::new(tags::TEXT_VALUE, VR::UT, report.clone()),
                 // DataElement::new(tags::CONCEPT_NAME_CODE_SEQUENCE, VR::SQ, "SOMETHING_ELSE"), // TODO
                 DataElement::new(tags::CONTINUITY_OF_CONTENT, VR::CS, "SEPARATE"),
             ]);
@@ -176,6 +194,8 @@ pub fn reporting(props: &ReportProps) -> Html {
             );
 
             sr.put(contents);
+            let rereport = sr.element(tags::SOP_INSTANCE_UID).unwrap().to_str().unwrap();
+            gloo::console::log!(wasm_bindgen::JsValue::from(rereport.into_owned()));
 
             let mut request_body = String::from("\r\n--myboundary");
             request_body.push_str("\r\nContent-Type: application/dicom+json\r\n\r\n");
@@ -198,88 +218,53 @@ pub fn reporting(props: &ReportProps) -> Html {
                 .await
                 .unwrap();
 
-                log!(result.ok());
+                gloo::console::log!(result.ok());
             });
             navigator.replace(&Route::Search);
         })
     };
 
-    let onchange = {
-        let report_node_ref = report_node_ref.clone();
-        Callback::from(move |_| {
-            let input = report_node_ref.cast::<HtmlTextAreaElement>();
-            if let Some(input) = input {
-                report.set(input.value());
-            }
-        })
-    };
-
     let body = {
-        let is_retrieving = is_retrieving.clone();
-        let retrieving_status = retrieving_status.clone();
         let study_details = study_details.clone();
         move || -> Html {
-            if !*is_retrieving {
-                html! {
-                            <form {onsubmit} class="m-2">
-                    <div class="grid gap-6 mb-6 md:grid-cols-2">
-                        <div>
-                            <div class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{"Patient ID"}</div>
-                            <div class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                {study_details.get(tags::PATIENT_ID).unwrap().to_str().unwrap()}
+            let patient_name = study_details.get(tags::PATIENT_NAME).unwrap().to_str().unwrap().replace("^", " ").trim().to_owned();
+            let modalities = study_details.get(tags::MODALITIES_IN_STUDY).unwrap().strings().unwrap().join(", ");
+            let date = study_details.get(tags::STUDY_DATE).unwrap().to_date().unwrap().to_naive_date().unwrap().format("%Y-%m-%d").to_string();
+            let time = study_details.get(tags::STUDY_TIME).unwrap().to_time().unwrap().to_naive_time().unwrap().format("%H:%M:%S").to_string();
+            html! {
+                <form class="px-6 md:px-12">
+                    <div class="border-b border-gray-900/10 pb-12">
+                        <h1 class="text-base font-semibold leading-7 text-gray-900">{"Reporting"}</h1>
+                        <p class="mt-1 text-sm leading-6 text-gray-600">{"Please make sure you are entering the report for the correct patient and type your report below."}</p>
+
+                        <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-1">
+                            <div class="sm:col-span-6">
+                                <h3>{"Report for "}{modalities}{" of "}{patient_name}{" done on "}{date}{" at "}{time}</h3>
                             </div>
                         </div>
-                        <div>
-                            <div class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{"Patient ID"}</div>
-                            <div class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                            {study_details.get(tags::PATIENT_NAME).unwrap().to_str().unwrap()}
-                            </div>
-                        </div>
-                        <div>
-                            <div class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{"Patient ID"}</div>
-                            <div class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                            {study_details.get(tags::PATIENT_SEX).unwrap().to_str().unwrap()}
-                            </div>
-                        </div>
-                        <div>
-                            <div class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{"Patient ID"}</div>
-                            <div class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                            {study_details.get(tags::STUDY_DATE).unwrap().to_date().unwrap().to_naive_date().unwrap().format("%Y-%m-%d").to_string()}
-                            </div>
-                        </div>
-                        <div>
-                            <div class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{"Patient ID"}</div>
-                            <div class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                            {study_details.get(tags::STUDY_TIME).unwrap().to_time().unwrap().to_naive_time().unwrap().format("%H:%M:%S").to_string()}
-                            </div>
-                        </div>
-                        <div>
-                            <div class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{"Patient ID"}</div>
-                            <div class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                            {study_details.get(tags::ACCESSION_NUMBER).unwrap().to_str().unwrap()}
-                            </div>
-                        </div>
-                        <div>
-                            <div class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{"Patient ID"}</div>
-                            <div class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                            {study_details.get(tags::MODALITIES_IN_STUDY).unwrap().strings().unwrap().join(", ")}
+
+                        <div class="mt-10 col-span-full">
+                            <label for="about" class="block text-sm font-medium leading-6 text-gray-900">{"Report"}</label>
+                            <div class="mt-2">
+                                <textarea ref={report_node_ref} id="report" name="about" rows="3" class="block w-full border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"></textarea>
                             </div>
                         </div>
                     </div>
-                    <div>
-                        <div class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{"Report:"}</div>
-                        <textarea class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" onchange={&onchange} ref={&report_node_ref} required={true} placeholder={"Type your report here..."}></textarea>
+
+                    <div class="mt-6 flex items-center justify-end gap-x-6">
+                        <button type="button" class="text-sm font-semibold leading-6 text-gray-900">{"Cancel"}</button>
+                        <button {onclick} type="button" class="bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{"Save"}</button>
                     </div>
-                    <button type="submit" class="mt-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">{"Submit"}</button>
                 </form>
-                        }
-            } else {
-                html! {<div>{(*retrieving_status).clone()}</div>}
             }
         }
     };
 
-    html! {
-        {body()}
-    }
+    html!(
+        if (*retrieving_status).clone() != String::from("") {
+            <p>{(*retrieving_status).clone()}</p>
+        } else {
+            {body()}
+        }
+    )
 }
