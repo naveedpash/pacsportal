@@ -263,18 +263,18 @@ pub fn search() -> Html {
         let filter_node_refs = filter_node_refs.clone();
         move || -> Html {
             html! {
-                <thead class="h-1">
-                    <tr class="table-row">
-                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
-                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
-                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
-                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
-                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
-                        <th><input type={"text"} class="" onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
-                        <th class="">{"Date Time"}</th>
+                <thead class="border-b font-medium dark:border-neutral-500">
+                    <tr>
+                        <th scope="col" class="px-2"><input type={"text"} class="w-full border-0 border-b-2 outline-none focus:outline-none p-1" onchange={&filter_callback} ref={&filter_node_refs[0]} placeholder={"Patient ID"} /></th>
+                        <th scope="col" class="px-2"><input type={"text"} class="w-full border-0 border-b-2 outline-none focus:outline-none p-1" onchange={&filter_callback} ref={&filter_node_refs[1]} placeholder={"Name"} /></th>
+                        <th scope="col" class="px-2"><input type={"text"} class="w-full border-0 border-b-2 outline-none focus:outline-none p-1" onchange={&filter_callback} ref={&filter_node_refs[2]} placeholder={"Accession"} /></th>
+                        <th scope="col" class="px-2"><input type={"text"} class="w-full border-0 border-b-2 outline-none focus:outline-none p-1" onchange={&filter_callback} ref={&filter_node_refs[3]} placeholder={"Modality"} /></th>
+                        <th scope="col" class="px-2"><input type={"text"} class="w-full border-0 border-b-2 outline-none focus:outline-none p-1" onchange={&filter_callback} ref={&filter_node_refs[4]} placeholder={"Description"} /></th>
+                        <th scope="col" class="px-2"><input type={"text"} class="w-full border-0 border-b-2 outline-none focus:outline-none p-1" onchange={&filter_callback} ref={&filter_node_refs[5]} placeholder={"Source AE"} /></th>
+                        <th scope="col" class="px-2">{"Date & Time"}</th>
                         {
                             if auth_ctx.inner {
-                                html! {<th></th>}
+                                html! {<th scope="col" class="px-2"></th>}
                             } else {
                                 html!{}
                             }
@@ -288,18 +288,18 @@ pub fn search() -> Html {
         let auth_ctx = auth_ctx.clone();
         move || -> Html {
             html! {
-                <tfoot>
-                    <tr class="table-row">
-                        <th class="table-cell"><p>{"Patient ID"}</p></th>
-                        <th class="table-cell"><p>{"Name"}</p></th>
-                        <th class="table-cell"><p>{"Accession"}</p></th>
-                        <th class="table-cell"><p>{"Modality"}</p></th>
-                        <th class="table-cell"><p>{"Description"}</p></th>
-                        <th class="table-cell"><p>{"Source AE"}</p></th>
-                        <th class="table-cell"><p>{"Date Time"}</p></th>
+                <tfoot class="border-t font-medium dark:border-neutral-500">
+                    <tr>
+                        <th scope="col" class="px-2 py-1"><p>{"Patient ID"}</p></th>
+                        <th scope="col" class="px-2 py-1"><p>{"Name"}</p></th>
+                        <th scope="col" class="px-2 py-1"><p>{"Accession"}</p></th>
+                        <th scope="col" class="px-2 py-1"><p>{"Modality"}</p></th>
+                        <th scope="col" class="px-2 py-1"><p>{"Description"}</p></th>
+                        <th scope="col" class="px-2 py-1"><p>{"Source AE"}</p></th>
+                        <th scope="col" class="px-2 py-1"><p>{"Date & Time"}</p></th>
                         {
                             if auth_ctx.inner {
-                                html! {<th></th>}
+                                html! {<th scope="col" class="px-2 py-1"></th>}
                             } else {
                                 html!{}
                             }
@@ -342,14 +342,14 @@ pub fn search() -> Html {
                                 let navigator = navigator.clone();
                                 html!{
                                     if to_show {
-                                        <tr key={id.clone().into_owned()} class="table-row hover:bg-[#d01c25]">
-                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{id}</a></td>
-                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{name}</a></td>
-                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{accession}</a></td>
-                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{modalities.clone()}</a></td>
-                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{description}</a></td>
-                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{source_ae}</a></td>
-                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="table-cell block">{date}{" "}{time}</a></td>
+                                        <tr key={id.clone().into_owned()} class="border-b dark:border-neutral-500 hover:bg-[#d01c25]">
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="block w-full font-medium">{id}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="block w-full">{name}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="block w-full">{accession}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="block w-full">{modalities.clone()}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="block w-full">{description}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="block w-full">{source_ae}</a></td>
+                                            <td><a href={format!("http://210.56.0.36:3000/Viewer/{}", study_uid.clone())} target="_blank" rel="noopener noreferrer" class="block w-full">{date}{" "}{time}</a></td>
                                             {
                                                 if auth_ctx.inner && !modalities.contains("SR") {
                                                     html!{
@@ -358,7 +358,7 @@ pub fn search() -> Html {
                                                                 move |e: MouseEvent| {
                                                                     let target_uid = e.target().and_then(|t| t.dyn_into::<HtmlButtonElement>().ok()).unwrap().value();
                                                                     navigator.clone().push(&Route::Reporting { uid: target_uid });
-                                                            }} value={study_uid.clone().to_string()} type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                                                            }} value={study_uid.clone().to_string()} type="submit" class="inline-block px-2 py-1 bg-[#ffd400] shadow-lg text-xs font-medium">
                                                                 {"Report"}
                                                             </button>
                                                         </td>
@@ -585,17 +585,21 @@ pub fn search() -> Html {
                 } type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{"Logout"}</button>
             </div>
         </nav>
-        <div class="overflow-x-auto p-2">
-                <table id="myTable" class="table-responsive min-w-full md:table-auto">
-                    {header()}
-                    {body()}
-                    {footer()}
-                </table>
-                // <script>
-                //     {"$(document).ready( function () {
-                //         $('#myTable').DataTable();
-                //     });"}
-                // </script>
+        <div class="flex flex-col overflow-x-auto">
+            <div class="inline-block min-w-full py-2 sm:px-6 lg:px-8">
+                <div class="overflow-x-auto">
+                    <table id="myTable" class="min-w-full text-left text-sm font-light">
+                        {header()}
+                        {body()}
+                        {footer()}
+                    </table>
+                    // <script>
+                    //     {"$(document).ready( function () {
+                    //         $('#myTable').DataTable();
+                    //     });"}
+                    // </script>
+                </div>
+            </div>
         </div>
         </>
     }
