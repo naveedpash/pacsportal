@@ -81,147 +81,149 @@ pub fn reporting(props: &ReportProps) -> Html {
                 report = report_textarea.value();
             }
 
-            let patient_name = study_details.get(tags::PATIENT_NAME).unwrap().string().unwrap();
-            let patient_id = study_details.get(tags::PATIENT_ID).unwrap().string().unwrap();
+            // let patient_name = study_details.get(tags::PATIENT_NAME).unwrap().string().unwrap();
+            // let patient_id = study_details.get(tags::PATIENT_ID).unwrap().string().unwrap();
+            // let accession_num = study_details.get(tags::ACCESSION_NUMBER).unwrap().string().unwrap();
 
-            let sr = InMemDicomObject::from_element_iter([
-                DataElement::new(tags::SOP_CLASS_UID, VR::UI, uids::BASIC_TEXT_SR_STORAGE),
-                DataElement::new(
-                    tags::SOP_INSTANCE_UID,
-                    VR::UI,
-                    format!("2.25.{}", Uuid::new_v4().simple().to_string()),
-                ),
-                DataElement::new(tags::PATIENT_NAME, VR::PN, patient_name),
-                DataElement::new(tags::PATIENT_ID, VR::LO, patient_id),
-                DataElement::new(
-                    tags::STUDY_INSTANCE_UID,
-                    VR::UI,
-                    study_uid.clone(),
-                ),
-                DataElement::new(tags::MODALITY, VR::CS, "SR"),
-                DataElement::new(
-                    tags::SERIES_INSTANCE_UID,
-                    VR::UI,
-                    format!("2.25.{}", Uuid::new_v4().simple().to_string()),
-                ), // .to_string()?
-                DataElement::new(tags::SERIES_NUMBER, VR::IS, "1"),
-                DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
-                DataElement::new(tags::TEXT_VALUE, VR::UT, report.clone()),
-            ]);
-
-            // let mut sr = InMemDicomObject::from_element_iter([
+            // let sr = InMemDicomObject::from_element_iter([
             //     DataElement::new(tags::SOP_CLASS_UID, VR::UI, uids::BASIC_TEXT_SR_STORAGE),
             //     DataElement::new(
             //         tags::SOP_INSTANCE_UID,
             //         VR::UI,
-            //         format!("2.25.{}", Uuid::new_v4()),
+            //         format!("2.25.{}", Uuid::new_v4().simple().to_string()),
             //     ),
-            //     study_details.get(tags::STUDY_DATE).unwrap().to_owned(),
-            //     study_details.get(tags::STUDY_TIME).unwrap().to_owned(),
-            //     // TODO: Need to modify this form so that the report can be back dated
-            //     DataElement::new(
-            //         tags::CONTENT_DATE,
-            //         VR::DA,
-            //         Local::now().date_naive().format("%Y%m%d").to_string(),
-            //     ),
-            //     DataElement::new(
-            //         tags::CONTENT_TIME,
-            //         VR::TM,
-            //         Local::now().naive_local().format("%H%M%S").to_string(),
-            //     ),
-            //     study_details
-            //         .get(tags::ACCESSION_NUMBER)
-            //         .unwrap()
-            //         .to_owned(),
-            //     DataElement::new(tags::MODALITY, VR::CS, "SR"),
-            //     match study_details.get(tags::MANUFACTURER) {
-            //         Some(_) => study_details.get(tags::MANUFACTURER).unwrap().to_owned(),
-            //         None => DataElement::empty(tags::MANUFACTURER, VR::LO),
-            //     },
-            //     study_details
-            //         .get(tags::REFERRING_PHYSICIAN_NAME)
-            //         .unwrap()
-            //         .to_owned(), // handle unwrap() errors with if let
-            //     study_details.get(tags::PATIENT_NAME).unwrap().to_owned(),
-            //     study_details.get(tags::PATIENT_ID).unwrap().to_owned(),
-            //     match study_details.get(tags::PATIENT_BIRTH_DATE) {
-            //         Some(_) => study_details.get(tags::PATIENT_BIRTH_DATE).unwrap().to_owned(),
-            //         None => DataElement::empty(tags::PATIENT_BIRTH_DATE, VR::DA),
-            //     },
-            //     study_details
-            //         .get(tags::PATIENT_BIRTH_DATE)
-            //         .unwrap()
-            //         .to_owned(), // handle unwrap() errors with if let
-            //     study_details.get(tags::PATIENT_SEX).unwrap().to_owned(),
+            //     DataElement::new(tags::PATIENT_NAME, VR::PN, patient_name),
+            //     DataElement::new(tags::PATIENT_ID, VR::LO, patient_id),
+            //     DataElement::new(tags::ACCESSION_NUMBER, VR::SH, accession_num),
             //     DataElement::new(
             //         tags::STUDY_INSTANCE_UID,
             //         VR::UI,
-            //         study_uid.clone(), // "1.2.392.200036.9116.6.18.10562196.1467.20230724090543953.1.74",
+            //         study_uid.clone(),
             //     ),
+            //     DataElement::new(tags::MODALITY, VR::CS, "SR"),
             //     DataElement::new(
             //         tags::SERIES_INSTANCE_UID,
             //         VR::UI,
-            //         format!("2.25.{}", Uuid::new_v4()),
+            //         format!("2.25.{}", Uuid::new_v4().simple().to_string()),
             //     ), // .to_string()?
-            //     study_details.get(tags::STUDY_ID).unwrap().to_owned(),
             //     DataElement::new(tags::SERIES_NUMBER, VR::IS, "1"),
-            //     DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "1"),
-            //     DataElement::new(
-            //         tags::VERIFYING_OBSERVER_SEQUENCE,
-            //         VR::SQ,
-            //         DicomValue::Sequence(DataSetSequence::new(
-            //             smallvec![InMemDicomObject::from_element_iter([
-            //                 DataElement::new(
-            //                     tags::VERIFYING_ORGANIZATION,
-            //                     VR::LO,
-            //                     "South City Hospital"
-            //                 ),
-            //                 DataElement::new(
-            //                     tags::VERIFICATION_DATE_TIME,
-            //                     VR::DT,
-            //                     Local::now()
-            //                         .naive_local()
-            //                         .format("%Y%m%d%H%M%S")
-            //                         .to_string()
-            //                 ),
-            //                 DataElement::new(
-            //                     tags::VERIFYING_OBSERVER_NAME,
-            //                     VR::PN,
-            //                     "DR WASAY JILANI"
-            //                 ),
-            //                 DataElement::new(
-            //                     tags::VERIFYING_OBSERVER_IDENTIFICATION_CODE_SEQUENCE,
-            //                     VR::SQ,
-            //                     DicomValue::Sequence(DataSetSequence::empty())
-            //                 )
-            //             ])],
-            //             Length::UNDEFINED,
-            //         )),
-            //     ),
-            //     DataElement::new(tags::COMPLETION_FLAG, VR::CS, "COMPLETE"),
-            //     DataElement::new(tags::VERIFICATION_FLAG, VR::CS, "VERIFIED"),
             //     DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
             //     DataElement::new(tags::TEXT_VALUE, VR::UT, report.clone()),
             // ]);
 
-            // let report_text = InMemDicomObject::from_element_iter([
-            //     DataElement::new(tags::RELATIONSHIP_TYPE, VR::CS, "CONTAINS"),
-            //     DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
-            //     DataElement::new(tags::TEXT_VALUE, VR::UT, report.clone()),
-            //     DataElement::new(tags::CONCEPT_NAME_CODE_SEQUENCE, VR::SQ, "SOMETHING_ELSE"), // TODO
-            //     DataElement::new(tags::CONTINUITY_OF_CONTENT, VR::CS, "SEPARATE"),
-            // ]);
+            let mut sr = InMemDicomObject::from_element_iter([
+                DataElement::new(tags::SOP_CLASS_UID, VR::UI, uids::BASIC_TEXT_SR_STORAGE),
+                DataElement::new(
+                    tags::SOP_INSTANCE_UID,
+                    VR::UI,
+                    format!("2.25.{}", Uuid::new_v4()),
+                ),
+                study_details.get(tags::STUDY_DATE).unwrap().to_owned(),
+                study_details.get(tags::STUDY_TIME).unwrap().to_owned(),
+                // TODO: Need to modify this form so that the report can be back dated
+                DataElement::new(
+                    tags::CONTENT_DATE,
+                    VR::DA,
+                    Local::now().date_naive().format("%Y%m%d").to_string(),
+                ),
+                DataElement::new(
+                    tags::CONTENT_TIME,
+                    VR::TM,
+                    Local::now().naive_local().format("%H%M%S").to_string(),
+                ),
+                study_details
+                    .get(tags::ACCESSION_NUMBER)
+                    .unwrap()
+                    .to_owned(),
+                DataElement::new(tags::MODALITY, VR::CS, "SR"),
+                match study_details.get(tags::MANUFACTURER) {
+                    Some(_) => study_details.get(tags::MANUFACTURER).unwrap().to_owned(),
+                    None => DataElement::empty(tags::MANUFACTURER, VR::LO),
+                },
+                study_details
+                    .get(tags::REFERRING_PHYSICIAN_NAME)
+                    .unwrap()
+                    .to_owned(), // handle unwrap() errors with if let
+                study_details.get(tags::PATIENT_NAME).unwrap().to_owned(),
+                study_details.get(tags::PATIENT_ID).unwrap().to_owned(),
+                match study_details.get(tags::PATIENT_BIRTH_DATE) {
+                    Some(_) => study_details.get(tags::PATIENT_BIRTH_DATE).unwrap().to_owned(),
+                    None => DataElement::empty(tags::PATIENT_BIRTH_DATE, VR::DA),
+                },
+                study_details
+                    .get(tags::PATIENT_BIRTH_DATE)
+                    .unwrap()
+                    .to_owned(), // handle unwrap() errors with if let
+                study_details.get(tags::PATIENT_SEX).unwrap().to_owned(),
+                DataElement::new(
+                    tags::STUDY_INSTANCE_UID,
+                    VR::UI,
+                    study_uid.clone(), // "1.2.392.200036.9116.6.18.10562196.1467.20230724090543953.1.74",
+                ),
+                DataElement::new(
+                    tags::SERIES_INSTANCE_UID,
+                    VR::UI,
+                    format!("2.25.{}", Uuid::new_v4()),
+                ), // .to_string()?
+                study_details.get(tags::STUDY_ID).unwrap().to_owned(),
+                DataElement::new(tags::SERIES_NUMBER, VR::IS, "1"),
+                DataElement::new(tags::INSTANCE_NUMBER, VR::IS, "1"),
+                DataElement::new(
+                    tags::VERIFYING_OBSERVER_SEQUENCE,
+                    VR::SQ,
+                    DicomValue::Sequence(DataSetSequence::new(
+                        smallvec![InMemDicomObject::from_element_iter([
+                            DataElement::new(
+                                tags::VERIFYING_ORGANIZATION,
+                                VR::LO,
+                                "South City Hospital"
+                            ),
+                            DataElement::new(
+                                tags::VERIFICATION_DATE_TIME,
+                                VR::DT,
+                                Local::now()
+                                    .naive_local()
+                                    .format("%Y%m%d%H%M%S")
+                                    .to_string()
+                            ),
+                            DataElement::new(
+                                tags::VERIFYING_OBSERVER_NAME,
+                                VR::PN,
+                                "DR WASAY JILANI"
+                            ),
+                            DataElement::new(
+                                tags::VERIFYING_OBSERVER_IDENTIFICATION_CODE_SEQUENCE,
+                                VR::SQ,
+                                DicomValue::Sequence(DataSetSequence::empty())
+                            )
+                        ])],
+                        Length::UNDEFINED,
+                    )),
+                ),
+                DataElement::new(tags::COMPLETION_FLAG, VR::CS, "COMPLETE"),
+                DataElement::new(tags::VERIFICATION_FLAG, VR::CS, "VERIFIED"),
+                DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
+                DataElement::new(tags::TEXT_VALUE, VR::UT, report.clone()),
+            ]);
 
-            // let contents = DataElement::new(
-            //     tags::CONTENT_SEQUENCE,
-            //     VR::SQ,
-            //     DicomValue::Sequence(DataSetSequence::new(
-            //         smallvec![report_text,],
-            //         Length::UNDEFINED,
-            //     )),
-            // );
+            let report_text = InMemDicomObject::from_element_iter([
+                DataElement::new(tags::RELATIONSHIP_TYPE, VR::CS, "CONTAINS"),
+                DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
+                DataElement::new(tags::TEXT_VALUE, VR::UT, report.clone()),
+                DataElement::new(tags::CONCEPT_NAME_CODE_SEQUENCE, VR::SQ, "SOMETHING_ELSE"), // TODO
+                DataElement::new(tags::CONTINUITY_OF_CONTENT, VR::CS, "SEPARATE"),
+            ]);
 
-            // sr.put(contents);
+            let contents = DataElement::new(
+                tags::CONTENT_SEQUENCE,
+                VR::SQ,
+                DicomValue::Sequence(DataSetSequence::new(
+                    smallvec![report_text,],
+                    Length::UNDEFINED,
+                )),
+            );
+
+            sr.put(contents);
             let rereport = sr.element(tags::SOP_INSTANCE_UID).unwrap().to_str().unwrap();
             gloo::console::log!(wasm_bindgen::JsValue::from(rereport.into_owned()));
 
