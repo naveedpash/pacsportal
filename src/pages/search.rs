@@ -379,7 +379,7 @@ pub fn search() -> Html {
                 html! {
                     <tbody>
                         <tr>
-                            <td colspan="7">
+                            <td colspan="7" class="text-white">
                                 {(*loaded_status).clone()}
                             </td>
                         </tr>
@@ -554,7 +554,7 @@ pub fn search() -> Html {
                         html!{<button name={filter.clone()} onclick={&modality_filter_callback} class={classes!(needed_styles)}>{filter.clone()}</button>}
                     }).collect::<Html>()
                 }
-                    <button name={"ANY"} onclick={&modality_filter_callback} class={classes!(base_styles, "rounded-r","dark:text-white", is_any)}>{"Any"}</button>
+                    <button name={"ANY"} onclick={&modality_filter_callback} class={classes!(base_styles, "rounded-r", is_any)}>{"Any"}</button>
                 </div>
             }
         }
