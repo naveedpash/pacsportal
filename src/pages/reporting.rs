@@ -210,7 +210,7 @@ pub fn reporting(props: &ReportProps) -> Html {
                 DataElement::new(tags::RELATIONSHIP_TYPE, VR::CS, "CONTAINS"),
                 DataElement::new(tags::VALUE_TYPE, VR::CS, "TEXT"),
                 DataElement::new(tags::TEXT_VALUE, VR::UT, report.clone()),
-                DataElement::new(tags::CONCEPT_NAME_CODE_SEQUENCE, VR::SQ, "SOMETHING_ELSE"), // TODO
+                // DataElement::new(tags::CONCEPT_NAME_CODE_SEQUENCE, VR::SQ, "SOMETHING_ELSE"), // TODO
                 DataElement::new(tags::CONTINUITY_OF_CONTENT, VR::CS, "SEPARATE"),
             ]);
 
@@ -263,21 +263,19 @@ pub fn reporting(props: &ReportProps) -> Html {
             let date = study_details.get(tags::STUDY_DATE).unwrap().to_date().unwrap().to_naive_date().unwrap().format("%Y-%m-%d").to_string();
             let time = study_details.get(tags::STUDY_TIME).unwrap().to_time().unwrap().to_naive_time().unwrap().format("%H:%M:%S").to_string();
             html! {
-                <form class="px-6 md:px-12">
-                    <div class="border-b border-gray-900/10 pb-12">
-                        <h1 class="text-base font-semibold leading-7 text-gray-900">{"Reporting"}</h1>
-                        <p class="mt-1 text-sm leading-6 text-gray-600">{"Please make sure you are entering the report for the correct patient and type your report below."}</p>
+                <form class="h-screen bg-black px-6 md:px-12 py-6">
+                    <div class="border-b border-white/10 pb-12">
+                        <h1 class="text-white text-base font-semibold leading-7">{"Reporting"}</h1>
+                        <p class="mt-1 text-sm leading-6 text-gray-500">{"Please make sure you are entering the report for the correct patient and type your report below."}</p>
 
-                        <div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-1">
-                            <div class="sm:col-span-6">
-                                <h3>{"Report for "}{modalities}{" of "}{patient_name}{" done on "}{date}{" at "}{time}</h3>
-                            </div>
+                        <div class="mt-10">
+                            <h3 class="text-white">{"Report for "}{modalities}{" of "}{patient_name}{" done on "}{date}{" at "}{time}</h3>
                         </div>
 
-                        <div class="mt-10 col-span-full">
-                            <label for="about" class="block text-sm font-medium leading-6 text-gray-900">{"Report"}</label>
+                        <div class="mt-10">
+                            <label for="about" class="block text-sm font-medium leading-6 text-white">{"Report"}</label>
                             <div class="mt-2">
-                                <textarea ref={report_node_ref} id="report" name="about" rows="3" class="block w-full border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"></textarea>
+                                <textarea ref={report_node_ref} id="report" name="about" rows="15" class="block w-full bg-transparent text-white border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"></textarea>
                             </div>
                         </div>
                     </div>
@@ -288,7 +286,7 @@ pub fn reporting(props: &ReportProps) -> Html {
                                 navigator.back();
                             }
                         } type="button" class="text-sm font-semibold leading-6 text-gray-900">{"Cancel"}</button>
-                        <button {onclick} type="button" class="bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{"Save"}</button>
+                        <button {onclick} type="button" class="bg-indigo-600 px-3 py-2 rounded-sm text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{"Save"}</button>
                     </div>
                 </form>
             }

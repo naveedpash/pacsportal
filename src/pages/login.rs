@@ -58,23 +58,23 @@ pub fn login() -> Html {
     };
 
     html! {
-        <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+        <div class="flex flex-col h-screen justify-center px-6 py-12 lg:px-8 bg-black">
             <div class="sm:mx-auto sm:w-full sm:max-w-sm">
                 <img class="mx-auto h-30 w-auto" src="assets/sch_logo.png" alt="South City Hospital" />
-                <h2 class="text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">{"Radiology Department"}</h2>
+                <h2 class="text-center text-2xl font-bold leading-9 tracking-tight text-white">{"Radiology Department"}</h2>
             </div>
 
             <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
                 <form class="space-y-3" {onsubmit}>
                     <div>
-                        <label for="username" class="block text-sm font-medium leading-6 text-gray-900">{"Username"}</label>
+                        <label for="username" class="block text-sm font-medium leading-6 text-white">{"Username"}</label>
                         <div class="mt-1">
-                            <input id="username" name="username" type="username" autocomplete="username" required={true} ref={&username_node_ref} class="block w-full rounded-sm border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
+                            <input id="username" name="username" autocomplete="username" required={true} ref={&username_node_ref} class="block w-full rounded-sm border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
                         </div>
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium leading-6 text-gray-900">{"Password"}</label>
+                        <label for="password" class="block text-sm font-medium leading-6 text-white">{"Password"}</label>
                         <div class="mt-1">
                             <input id="password" name="password" type="password" autocomplete="current-password" required={true} ref={&password_node_ref} class="block w-full rounded-sm border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" />
                         </div>
@@ -84,7 +84,7 @@ pub fn login() -> Html {
                         <button type="submit" class="flex w-full justify-center rounded-sm bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{"Login"}</button>
                     </div>
                     if *is_error {
-                        <p>{"Incorrect username and password."}</p>
+                        <p class="text-red">{"Incorrect username and password."}</p>
                     }
                 </form>
             </div>
